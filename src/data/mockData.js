@@ -11,9 +11,27 @@ export const mockClaims = [
     date: '2024-01-15',
     description: 'Cirugía de apendicitis realizada en Hospital General',
     documents: [
-      { name: 'factura_hospital.pdf', type: 'Factura' },
-      { name: 'receta_medica.pdf', type: 'Receta médica' },
-      { name: 'carnet_seguro.jpg', type: 'Carnet de seguro' }
+      {
+        name: 'factura_hospital.pdf',
+        type: 'Factura',
+        status: 'recibido',
+        comment: '',
+        url: '#'
+      },
+      {
+        name: 'receta_medica.pdf',
+        type: 'Receta médica',
+        status: 'aprobado',
+        comment: 'Documento correcto',
+        url: '#'
+      },
+      {
+        name: 'carnet_seguro.jpg',
+        type: 'Carnet de seguro',
+        status: 'rechazado',
+        comment: 'Documento ilegible, favor de enviar una versión más clara',
+        url: '#'
+      }
     ]
   },
   {
@@ -28,8 +46,20 @@ export const mockClaims = [
     date: '2024-01-10',
     description: 'Consulta especializada en cardiología',
     documents: [
-      { name: 'orden_medica.pdf', type: 'Orden médica' },
-      { name: 'carnet_seguro.jpg', type: 'Carnet de seguro' }
+      {
+        name: 'orden_medica.pdf',
+        type: 'Orden médica',
+        status: 'aprobado',
+        comment: '',
+        url: '#'
+      },
+      {
+        name: 'carnet_seguro.jpg',
+        type: 'Carnet de seguro',
+        status: 'aprobado',
+        comment: '',
+        url: '#'
+      }
     ]
   },
   {
@@ -44,9 +74,27 @@ export const mockClaims = [
     date: '2024-01-08',
     description: 'Exámenes prenatales de rutina',
     documents: [
-      { name: 'resultados_laboratorio.pdf', type: 'Resultados de laboratorio' },
-      { name: 'orden_medica.pdf', type: 'Orden médica' },
-      { name: 'carnet_seguro.jpg', type: 'Carnet de seguro' }
+      {
+        name: 'resultados_laboratorio.pdf',
+        type: 'Resultados de laboratorio',
+        status: 'aprobado',
+        comment: '',
+        url: '#'
+      },
+      {
+        name: 'orden_medica.pdf',
+        type: 'Orden médica',
+        status: 'aprobado',
+        comment: '',
+        url: '#'
+      },
+      {
+        name: 'carnet_seguro.jpg',
+        type: 'Carnet de seguro',
+        status: 'aprobado',
+        comment: '',
+        url: '#'
+      }
     ]
   },
   {
@@ -61,9 +109,27 @@ export const mockClaims = [
     date: '2024-01-05',
     description: 'Medicamentos para tratamiento de diabetes',
     documents: [
-      { name: 'receta_medica.pdf', type: 'Receta médica' },
-      { name: 'factura_farmacia.pdf', type: 'Factura farmacia' },
-      { name: 'carnet_seguro.jpg', type: 'Carnet de seguro' }
+      {
+        name: 'receta_medica.pdf',
+        type: 'Receta médica',
+        status: 'aprobado',
+        comment: '',
+        url: '#'
+      },
+      {
+        name: 'factura_farmacia.pdf',
+        type: 'Factura farmacia',
+        status: 'aprobado',
+        comment: '',
+        url: '#'
+      },
+      {
+        name: 'carnet_seguro.jpg',
+        type: 'Carnet de seguro',
+        status: 'aprobado',
+        comment: '',
+        url: '#'
+      }
     ]
   },
   {
@@ -78,9 +144,27 @@ export const mockClaims = [
     date: '2024-01-12',
     description: 'Sesiones de fisioterapia por lesión deportiva',
     documents: [
-      { name: 'orden_fisioterapia.pdf', type: 'Orden médica' },
-      { name: 'factura_terapias.pdf', type: 'Factura' },
-      { name: 'carnet_seguro.jpg', type: 'Carnet de seguro' }
+      {
+        name: 'orden_fisioterapia.pdf',
+        type: 'Orden médica',
+        status: 'recibido',
+        comment: '',
+        url: '#'
+      },
+      {
+        name: 'factura_terapias.pdf',
+        type: 'Factura',
+        status: 'pendiente',
+        comment: 'Documento pendiente de recepción',
+        url: '#'
+      },
+      {
+        name: 'carnet_seguro.jpg',
+        type: 'Carnet de seguro',
+        status: 'recibido',
+        comment: '',
+        url: '#'
+      }
     ]
   }
 ];
