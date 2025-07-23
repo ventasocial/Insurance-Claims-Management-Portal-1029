@@ -6,7 +6,7 @@ import Filters from '../components/Filters';
 import * as FiIcons from 'react-icons/fi';
 import SafeIcon from '../common/SafeIcon';
 
-const { FiEye, FiUsers, FiFileText, FiClock, FiCheck, FiThumbsUp, FiUserPlus } = FiIcons;
+const { FiEye, FiUsers, FiFileText, FiClock, FiCheck, FiThumbsUp } = FiIcons;
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
@@ -72,18 +72,9 @@ const AdminDashboard = () => {
     <Layout title="Panel de Administración">
       <div className="space-y-6">
         {/* Header */}
-        <div className="flex justify-between items-center">
-          <div>
-            <h2 className="text-2xl font-bold text-gray-900">Panel de Administración</h2>
-            <p className="text-gray-600">Gestiona todos los reclamos del sistema</p>
-          </div>
-          <button 
-            onClick={() => navigate('/admin/usuarios')}
-            className="flex items-center space-x-2 bg-primary text-white px-4 py-2 rounded-lg hover:bg-primary-dark transition-colors"
-          >
-            <SafeIcon icon={FiUserPlus} className="w-5 h-5" />
-            <span>Gestionar Usuarios</span>
-          </button>
+        <div>
+          <h2 className="text-2xl font-bold text-gray-900">Panel de Administración</h2>
+          <p className="text-gray-600">Gestiona todos los reclamos del sistema</p>
         </div>
 
         {/* Stats */}

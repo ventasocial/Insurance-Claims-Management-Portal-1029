@@ -31,6 +31,10 @@ export const AuthProvider = ({ children }) => {
           id: 1,
           email: 'admin@seguro.com',
           name: 'Administrador',
+          firstName: 'Admin',
+          paternalLastName: 'Demo',
+          maternalLastName: '',
+          whatsapp: '+52 55 1234 5678',
           role: 'admin'
         };
         setUser(userData);
@@ -41,6 +45,10 @@ export const AuthProvider = ({ children }) => {
           id: 5,
           email: 'staff@seguro.com',
           name: 'Staff Demo',
+          firstName: 'Staff',
+          paternalLastName: 'Demo',
+          maternalLastName: '',
+          whatsapp: '+52 55 8765 4321',
           role: 'staff'
         };
         setUser(userData);
@@ -51,6 +59,10 @@ export const AuthProvider = ({ children }) => {
           id: 2,
           email: 'cliente@email.com',
           name: 'Cliente Demo',
+          firstName: 'Cliente',
+          paternalLastName: 'Demo',
+          maternalLastName: 'Test',
+          whatsapp: '+52 55 9876 5432',
           role: 'client'
         };
         setUser(userData);
@@ -64,6 +76,11 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const updateUserProfile = (updatedUserData) => {
+    setUser(updatedUserData);
+    localStorage.setItem('user', JSON.stringify(updatedUserData));
+  };
+
   const logout = () => {
     setUser(null);
     localStorage.removeItem('user');
@@ -73,6 +90,7 @@ export const AuthProvider = ({ children }) => {
     user,
     login,
     logout,
+    updateUserProfile,
     loading
   };
 
