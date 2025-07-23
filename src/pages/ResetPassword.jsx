@@ -33,6 +33,9 @@ const ResetPassword = () => {
       });
 
       if (error) {
+        if (error.message === "Email not found") {
+          throw new Error("No existe una cuenta con este correo electrónico");
+        }
         throw error;
       }
 

@@ -54,6 +54,9 @@ const UpdatePassword = () => {
       const { error } = await supabase.auth.updateUser({ password });
 
       if (error) {
+        if (error.message === "Password should be at least 6 characters") {
+          throw new Error("La contraseña debe tener al menos 6 caracteres");
+        }
         throw error;
       }
 

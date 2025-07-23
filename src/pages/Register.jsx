@@ -54,9 +54,9 @@ const Register = () => {
     }
 
     if (!formData.email.trim()) {
-      newErrors.email = "El email es requerido";
+      newErrors.email = "El correo electrónico es requerido";
     } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-      newErrors.email = "El email no es válido";
+      newErrors.email = "El correo electrónico no es válido";
     }
 
     if (!formData.password) {
@@ -88,7 +88,12 @@ const Register = () => {
         password: formData.password,
       });
       
-      if (authError) throw authError;
+      if (authError) {
+        if (authError.message === "User already registered") {
+          throw new Error("Este correo electrónico ya está registrado");
+        }
+        throw authError;
+      }
       
       if (!authData.user) {
         throw new Error('No se pudo crear el usuario');
@@ -107,7 +112,9 @@ const Register = () => {
           status: 'active',
         });
       
-      if (profileError) throw profileError;
+      if (profileError) {
+        throw new Error("Error al crear el perfil de usuario");
+      }
       
       // En un entorno de producción, aquí se enviaría un correo de confirmación
       // Para este ejemplo, consideramos que el registro fue exitoso
