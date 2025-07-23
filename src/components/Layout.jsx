@@ -105,7 +105,7 @@ const Layout = ({ children, title }) => {
   const isUsersPage = location.pathname === '/admin/usuarios';
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 flex flex-col">
       <header className="bg-white shadow-sm border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
@@ -123,7 +123,7 @@ const Layout = ({ children, title }) => {
                 className="flex items-center space-x-2 text-gray-600 hover:text-primary transition-colors"
               >
                 <SafeIcon icon={FiHome} className="w-5 h-5" />
-                <span>Inicio</span>
+                <span className="hidden sm:inline">Inicio</span>
               </button>
               
               {/* Botón de Usuarios solo para administradores y no visible en la página de usuarios */}
@@ -133,7 +133,7 @@ const Layout = ({ children, title }) => {
                   className="flex items-center space-x-2 text-gray-600 hover:text-primary transition-colors"
                 >
                   <SafeIcon icon={FiUsers} className="w-5 h-5" />
-                  <span>Usuarios</span>
+                  <span className="hidden sm:inline">Usuarios</span>
                 </button>
               )}
               
@@ -142,7 +142,7 @@ const Layout = ({ children, title }) => {
                 className="flex items-center space-x-2 text-gray-700 hover:text-primary transition-colors"
               >
                 <SafeIcon icon={FiUser} className="w-5 h-5" />
-                <span className="text-sm">{user?.name}</span>
+                <span className="text-sm hidden sm:inline">{user?.name}</span>
                 <span className="text-xs bg-primary text-white px-2 py-1 rounded-full">
                   {user?.role === 'admin' 
                     ? 'Admin' 
@@ -150,20 +150,33 @@ const Layout = ({ children, title }) => {
                       ? 'Staff'
                       : 'Cliente'}
                 </span>
-                <SafeIcon icon={FiEdit} className="w-4 h-4 text-gray-500" />
               </button>
               <button
                 onClick={handleLogout}
                 className="flex items-center space-x-2 text-gray-600 hover:text-red-600 transition-colors"
               >
                 <SafeIcon icon={FiLogOut} className="w-5 h-5" />
-                <span>Salir</span>
+                <span className="hidden sm:inline">Salir</span>
               </button>
             </div>
           </div>
         </div>
       </header>
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">{children}</main>
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-grow">{children}</main>
+      
+      {/* Footer */}
+      <footer className="bg-primary text-white py-4 mt-auto">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex flex-col sm:flex-row justify-between items-center">
+            <div className="mb-2 sm:mb-0">
+              <p className="text-sm">Powered by agendia.ai</p>
+            </div>
+            <div>
+              <p className="text-sm">¿Necesitas ayuda? <a href="mailto:hola@agendia.ai" className="underline hover:text-blue-200 transition-colors">hola@agendia.ai</a></p>
+            </div>
+          </div>
+        </div>
+      </footer>
 
       {/* Modal de Edición de Perfil */}
       {showProfileModal && (
