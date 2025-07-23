@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Layout from '../components/Layout';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import * as FiIcons from 'react-icons/fi';
 import SafeIcon from '../common/SafeIcon';
 import InsuredPersonsList from '../components/InsuredPersonsList';
@@ -9,6 +9,9 @@ const { FiUser, FiMail, FiPhone, FiFileText, FiUpload, FiX, FiAlertCircle, FiChe
 
 const CreateClaim = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const complementData = location.state?.complementData;
+
   const [formData, setFormData] = useState({
     customerName: '',
     customerEmail: '',
@@ -23,7 +26,7 @@ const CreateClaim = () => {
     description: '',
     saveCustomerDetails: true,
     isTitularCuentaBancaria: false,
-    signatureType: 'electronic' // Nuevo campo para el tipo de firma (electronic o physical)
+    signatureType: 'electronic'
   });
 
   const [documents, setDocuments] = useState({
@@ -36,8 +39,19 @@ const CreateClaim = () => {
   const [whatsappError, setWhatsappError] = useState('');
   const [showInsuredList, setShowInsuredList] = useState(false);
 
+  // Pre-cargar datos si viene de complemento
+  useEffect(() => {
+    if (complementData) {
+      setFormData(prev => ({
+        ...prev,
+        ...complementData
+      }));
+    }
+  }, [complementData]);
+
   const handleInputChange = (e) => {
     const { name, value } = e.target;
+    
     if (name === 'customerWhatsApp') {
       if (value && !value.startsWith('+')) {
         setWhatsappError('El número debe incluir el código de país (ej. +52)');
@@ -198,7 +212,7 @@ const CreateClaim = () => {
   // Función para obtener los campos de la Sección 3
   const getSection3Fields = () => {
     const fields = [];
-    
+
     // Cirugía de Traumatología, Ortopedia y Neurología (GNP)
     if (formData.insurance === 'GNP' && formData.claimType === 'Programación' && 
         formData.serviceTypes.includes('Cirugía') && formData.isTraumaOrthopedicSurgery) {
@@ -287,6 +301,7 @@ const CreateClaim = () => {
     }
 
     setLoading(true);
+    
     try {
       if (formData.saveCustomerDetails) {
         // Simulación de guardado exitoso
@@ -298,7 +313,7 @@ const CreateClaim = () => {
           insurance: formData.insurance
         });
       }
-      
+
       await new Promise(resolve => setTimeout(resolve, 1000));
       alert('Reclamo creado exitosamente');
       navigate('/dashboard');
@@ -320,8 +335,15 @@ const CreateClaim = () => {
     <Layout title="Crear Nuevo Reclamo">
       <div className="max-w-4xl mx-auto">
         <div className="mb-6">
-          <h2 className="text-2xl font-bold text-gray-900">Crear Nuevo Reclamo</h2>
-          <p className="text-gray-600">Completa la información para crear tu reclamo de seguro</p>
+          <h2 className="text-2xl font-bold text-gray-900">
+            {complementData ? 'Crear Reclamo Complemento' : 'Crear Nuevo Reclamo'}
+          </h2>
+          <p className="text-gray-600">
+            {complementData ? 
+              'Completa la información para crear tu reclamo complemento' : 
+              'Completa la información para crear tu reclamo de seguro'
+            }
+          </p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-8">
@@ -332,18 +354,19 @@ const CreateClaim = () => {
                 <SafeIcon icon={FiUser} className="w-5 h-5 text-primary" />
                 <h3 className="text-lg font-medium text-gray-900">Información del Asegurado</h3>
               </div>
-              
               {/* Botón discreto para seleccionar asegurado guardado */}
-              <button 
-                type="button"
-                onClick={() => setShowInsuredList(!showInsuredList)} 
-                className="flex items-center space-x-2 px-3 py-2 text-sm text-gray-600 hover:text-gray-800 hover:bg-gray-50 border border-gray-300 rounded-md transition-colors"
-              >
-                <SafeIcon icon={FiUsers} className="w-4 h-4" />
-                <span>Seleccionar guardado</span>
-              </button>
+              {!complementData && (
+                <button
+                  type="button"
+                  onClick={() => setShowInsuredList(!showInsuredList)}
+                  className="flex items-center space-x-2 px-3 py-2 text-sm text-gray-600 hover:text-gray-800 hover:bg-gray-50 border border-gray-300 rounded-md transition-colors"
+                >
+                  <SafeIcon icon={FiUsers} className="w-4 h-4" />
+                  <span>Seleccionar guardado</span>
+                </button>
+              )}
             </div>
-            
+
             {showInsuredList && (
               <div className="mb-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
                 <InsuredPersonsList onSelectPerson={handleSelectInsured} />
@@ -361,7 +384,8 @@ const CreateClaim = () => {
                   required
                   value={formData.customerName}
                   onChange={handleInputChange}
-                  className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary"
+                  readOnly={!!complementData}
+                  className={`w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary ${complementData ? 'bg-gray-50' : ''}`}
                   placeholder="Nombre completo del asegurado"
                 />
               </div>
@@ -376,7 +400,8 @@ const CreateClaim = () => {
                   required
                   value={formData.customerEmail}
                   onChange={handleInputChange}
-                  className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary"
+                  readOnly={!!complementData}
+                  className={`w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary ${complementData ? 'bg-gray-50' : ''}`}
                   placeholder="correo@ejemplo.com"
                 />
               </div>
@@ -391,7 +416,8 @@ const CreateClaim = () => {
                   required
                   value={formData.customerWhatsApp}
                   onChange={handleInputChange}
-                  className={`w-full border ${whatsappError ? 'border-red-300' : 'border-gray-300'} rounded-md px-3 py-2 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary`}
+                  readOnly={!!complementData}
+                  className={`w-full border ${whatsappError ? 'border-red-300' : 'border-gray-300'} rounded-md px-3 py-2 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary ${complementData ? 'bg-gray-50' : ''}`}
                   placeholder="+52 55 1234 5678"
                 />
                 {whatsappError && (
@@ -409,7 +435,8 @@ const CreateClaim = () => {
                   required
                   value={formData.policyNumber}
                   onChange={handleInputChange}
-                  className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary"
+                  readOnly={!!complementData}
+                  className={`w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary ${complementData ? 'bg-gray-50' : ''}`}
                   placeholder="Número de póliza"
                 />
               </div>
@@ -423,7 +450,8 @@ const CreateClaim = () => {
                   required
                   value={formData.insurance}
                   onChange={handleInputChange}
-                  className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary"
+                  disabled={!!complementData}
+                  className={`w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary ${complementData ? 'bg-gray-50' : ''}`}
                 >
                   <option value="">Selecciona la aseguradora</option>
                   <option value="GNP">GNP</option>
@@ -468,7 +496,8 @@ const CreateClaim = () => {
                     required
                     value={formData.claimType}
                     onChange={handleInputChange}
-                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary"
+                    disabled={!!complementData}
+                    className={`w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary ${complementData ? 'bg-gray-50' : ''}`}
                   >
                     <option value="">Selecciona el tipo de reclamo</option>
                     <option value="Reembolso">Reembolso</option>
@@ -487,7 +516,8 @@ const CreateClaim = () => {
                       required
                       value={formData.claimInitialType}
                       onChange={handleInputChange}
-                      className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary"
+                      disabled={!!complementData}
+                      className={`w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary ${complementData ? 'bg-gray-50' : ''}`}
                     >
                       <option value="">Selecciona el tipo</option>
                       <option value="Inicial">Inicial</option>
@@ -545,10 +575,7 @@ const CreateClaim = () => {
                       type="checkbox"
                       id="isTraumaOrthopedicSurgery"
                       checked={formData.isTraumaOrthopedicSurgery}
-                      onChange={(e) => setFormData(prev => ({
-                        ...prev,
-                        isTraumaOrthopedicSurgery: e.target.checked
-                      }))}
+                      onChange={(e) => setFormData(prev => ({ ...prev, isTraumaOrthopedicSurgery: e.target.checked }))}
                       className="h-4 w-4 text-primary border-gray-300 rounded focus:ring-primary"
                     />
                     <label htmlFor="isTraumaOrthopedicSurgery" className="ml-2 text-sm font-medium text-yellow-800">
@@ -581,7 +608,7 @@ const CreateClaim = () => {
                 <SafeIcon icon={FiFileText} className="w-5 h-5 text-blue-600" />
                 <h3 className="text-lg font-medium text-blue-900">Sección 1: Firmas de Formas de Aseguradora</h3>
               </div>
-              
+
               {/* Toggle de tipo de firma */}
               <div className="mb-6 flex items-center justify-center bg-white p-3 rounded-lg border border-blue-100">
                 <div className="flex space-x-4">
@@ -589,8 +616,8 @@ const CreateClaim = () => {
                     type="button"
                     onClick={() => handleSignatureTypeChange('electronic')}
                     className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                      formData.signatureType === 'electronic'
-                        ? 'bg-blue-600 text-white'
+                      formData.signatureType === 'electronic' 
+                        ? 'bg-blue-600 text-white' 
                         : 'bg-white text-blue-600 border border-blue-200'
                     }`}
                   >
@@ -600,8 +627,8 @@ const CreateClaim = () => {
                     type="button"
                     onClick={() => handleSignatureTypeChange('physical')}
                     className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                      formData.signatureType === 'physical'
-                        ? 'bg-blue-600 text-white'
+                      formData.signatureType === 'physical' 
+                        ? 'bg-blue-600 text-white' 
                         : 'bg-white text-blue-600 border border-blue-200'
                     }`}
                   >

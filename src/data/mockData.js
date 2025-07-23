@@ -6,6 +6,7 @@ export const mockClaims = [
     customerWhatsApp: '+52 55 1234 5678',
     policyNumber: 'POL-2024-001',
     claimType: 'Reembolso',
+    claimInitialType: 'Inicial', // Nuevo campo
     serviceType: 'Cirugía',
     status: 'Pendiente',
     date: '2024-01-15',
@@ -104,8 +105,9 @@ export const mockClaims = [
     customerWhatsApp: '+52 55 7777 8888',
     policyNumber: 'POL-2024-004',
     claimType: 'Reembolso',
+    claimInitialType: 'Complemento', // Nuevo campo
     serviceType: 'Medicamentos',
-    status: 'Archivado',
+    status: 'Aprobado',
     date: '2024-01-05',
     description: 'Medicamentos para tratamiento de diabetes',
     documents: [
@@ -139,8 +141,9 @@ export const mockClaims = [
     customerWhatsApp: '+52 55 3333 4444',
     policyNumber: 'POL-2024-005',
     claimType: 'Reembolso',
+    claimInitialType: 'Inicial', // Nuevo campo
     serviceType: 'Terapias',
-    status: 'Pendiente',
+    status: 'Rechazado',
     date: '2024-01-12',
     description: 'Sesiones de fisioterapia por lesión deportiva',
     documents: [

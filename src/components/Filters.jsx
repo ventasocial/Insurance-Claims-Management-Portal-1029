@@ -84,8 +84,10 @@ const Filters = ({ filters, setFilters }) => {
             <option value="">Todos los estatus</option>
             <option value="Pendiente">Pendiente</option>
             <option value="Verificado">Verificado</option>
+            <option value="Rechazado">Rechazado</option>
             <option value="Enviado a Aseguradora">Enviado a Aseguradora</option>
             <option value="Archivado">Archivado</option>
+            <option value="Aprobado">Aprobado</option>
           </select>
         </div>
 
