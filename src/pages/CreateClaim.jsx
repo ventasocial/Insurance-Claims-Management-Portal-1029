@@ -5,7 +5,7 @@ import * as FiIcons from 'react-icons/fi';
 import SafeIcon from '../common/SafeIcon';
 import InsuredPersonsList from '../components/InsuredPersonsList';
 
-const { FiUser, FiMail, FiPhone, FiFileText, FiUpload, FiX, FiAlertCircle, FiCheck } = FiIcons;
+const { FiUser, FiMail, FiPhone, FiFileText, FiUpload, FiX, FiAlertCircle, FiCheck, FiUsers } = FiIcons;
 
 const CreateClaim = () => {
   const navigate = useNavigate();
@@ -183,6 +183,9 @@ const CreateClaim = () => {
         'Formato Único de Información Bancaria'
       ];
     }
+    if (formData.insurance === 'GNP' && formData.claimType === 'Programación') {
+      return ['Aviso de Accidente o Enfermedad'];
+    }
     if (formData.insurance === 'AXA' && formData.claimType === 'Reembolso') {
       return ['Solicitud de Reembolso'];
     }
@@ -321,28 +324,31 @@ const CreateClaim = () => {
           <p className="text-gray-600">Completa la información para crear tu reclamo de seguro</p>
         </div>
 
-        <div className="mb-6">
-          <button 
-            onClick={() => setShowInsuredList(!showInsuredList)} 
-            className="bg-primary text-white px-4 py-2 rounded-md hover:bg-primary-dark transition-colors"
-          >
-            {showInsuredList ? 'Ocultar Asegurados' : 'Seleccionar Asegurado Guardado'}
-          </button>
-          
-          {showInsuredList && (
-            <div className="mt-4 bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-              <InsuredPersonsList onSelectPerson={handleSelectInsured} />
-            </div>
-          )}
-        </div>
-
         <form onSubmit={handleSubmit} className="space-y-8">
           {/* Información del Asegurado */}
           <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-            <div className="flex items-center space-x-2 mb-6">
-              <SafeIcon icon={FiUser} className="w-5 h-5 text-primary" />
-              <h3 className="text-lg font-medium text-gray-900">Información del Asegurado</h3>
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center space-x-2">
+                <SafeIcon icon={FiUser} className="w-5 h-5 text-primary" />
+                <h3 className="text-lg font-medium text-gray-900">Información del Asegurado</h3>
+              </div>
+              
+              {/* Botón discreto para seleccionar asegurado guardado */}
+              <button 
+                type="button"
+                onClick={() => setShowInsuredList(!showInsuredList)} 
+                className="flex items-center space-x-2 px-3 py-2 text-sm text-gray-600 hover:text-gray-800 hover:bg-gray-50 border border-gray-300 rounded-md transition-colors"
+              >
+                <SafeIcon icon={FiUsers} className="w-4 h-4" />
+                <span>Seleccionar guardado</span>
+              </button>
             </div>
+            
+            {showInsuredList && (
+              <div className="mb-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                <InsuredPersonsList onSelectPerson={handleSelectInsured} />
+              </div>
+            )}
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
