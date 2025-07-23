@@ -30,24 +30,29 @@ const Login = () => {
     setError('');
     setLoading(true);
     
-    const result = await login(email, password);
-    
-    if (!result.success) {
-      // Traducir mensajes de error comunes
-      if (result.error === "Invalid login credentials") {
-        setError("Credenciales de acceso inválidas");
-      } else if (result.error === "Email not confirmed") {
-        setError("Correo electrónico no confirmado");
-      } else if (result.error.includes("password")) {
-        setError("Contraseña incorrecta");
-      } else if (result.error.includes("email")) {
-        setError("Correo electrónico inválido");
-      } else {
-        setError(result.error || "Error al iniciar sesión");
+    try {
+      const result = await login(email, password);
+      
+      if (!result.success) {
+        // Traducir mensajes de error comunes
+        if (result.error === "Invalid login credentials") {
+          setError("Credenciales de acceso inválidas");
+        } else if (result.error === "Email not confirmed") {
+          setError("Correo electrónico no confirmado");
+        } else if (result.error.includes("password")) {
+          setError("Contraseña incorrecta");
+        } else if (result.error.includes("email")) {
+          setError("Correo electrónico inválido");
+        } else {
+          setError(result.error || "Error al iniciar sesión");
+        }
       }
+    } catch (error) {
+      setError("Error al conectar con el servidor");
+      console.error("Error de conexión:", error);
+    } finally {
       setLoading(false);
     }
-    // La navegación se maneja en el useEffect cuando el usuario se actualiza
   };
 
   const handleGoogleSignIn = async () => {
@@ -189,7 +194,6 @@ const Login = () => {
               <div><strong>Admin:</strong> admin@seguro.com / admin123</div>
               <div><strong>Staff:</strong> staff@seguro.com / staff123</div>
               <div><strong>Cliente:</strong> cliente@email.com / cliente123</div>
-              <div><strong>Admin:</strong> jorge@venta.social / 20Febrero</div>
             </div>
           </div>
         </div>

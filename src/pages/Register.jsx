@@ -52,6 +52,10 @@ const Register = () => {
     if (!formData.paternalLastName.trim()) {
       newErrors.paternalLastName = "El apellido paterno es requerido";
     }
+    
+    if (!formData.maternalLastName.trim()) {
+      newErrors.maternalLastName = "El apellido materno es requerido";
+    }
 
     if (!formData.email.trim()) {
       newErrors.email = "El correo electrónico es requerido";
@@ -167,25 +171,27 @@ const Register = () => {
 
           <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
             <div className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label htmlFor="firstName" className="block text-sm font-medium text-gray-700">
-                    Nombre*
-                  </label>
-                  <input
-                    id="firstName"
-                    name="firstName"
-                    type="text"
-                    value={formData.firstName}
-                    onChange={handleChange}
-                    className={`mt-1 block w-full border ${errors.firstName ? 'border-red-300' : 'border-gray-300'} rounded-md px-3 py-2 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary`}
-                    placeholder="Tu nombre"
-                  />
-                  {errors.firstName && (
-                    <p className="mt-1 text-xs text-red-500">{errors.firstName}</p>
-                  )}
-                </div>
+              {/* Nombre en línea completa */}
+              <div>
+                <label htmlFor="firstName" className="block text-sm font-medium text-gray-700">
+                  Nombre(s)*
+                </label>
+                <input
+                  id="firstName"
+                  name="firstName"
+                  type="text"
+                  value={formData.firstName}
+                  onChange={handleChange}
+                  className={`mt-1 block w-full border ${errors.firstName ? 'border-red-300' : 'border-gray-300'} rounded-md px-3 py-2 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary`}
+                  placeholder="Escribe todos tus nombres de pila tal como aparecen en tu identificación oficial"
+                />
+                {errors.firstName && (
+                  <p className="mt-1 text-xs text-red-500">{errors.firstName}</p>
+                )}
+              </div>
 
+              {/* Apellidos en segunda línea */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label htmlFor="paternalLastName" className="block text-sm font-medium text-gray-700">
                     Apellido Paterno*
@@ -203,21 +209,24 @@ const Register = () => {
                     <p className="mt-1 text-xs text-red-500">{errors.paternalLastName}</p>
                   )}
                 </div>
-              </div>
 
-              <div>
-                <label htmlFor="maternalLastName" className="block text-sm font-medium text-gray-700">
-                  Apellido Materno (opcional)
-                </label>
-                <input
-                  id="maternalLastName"
-                  name="maternalLastName"
-                  type="text"
-                  value={formData.maternalLastName}
-                  onChange={handleChange}
-                  className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary"
-                  placeholder="Apellido materno"
-                />
+                <div>
+                  <label htmlFor="maternalLastName" className="block text-sm font-medium text-gray-700">
+                    Apellido Materno*
+                  </label>
+                  <input
+                    id="maternalLastName"
+                    name="maternalLastName"
+                    type="text"
+                    value={formData.maternalLastName}
+                    onChange={handleChange}
+                    className={`mt-1 block w-full border ${errors.maternalLastName ? 'border-red-300' : 'border-gray-300'} rounded-md px-3 py-2 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary`}
+                    placeholder="Apellido materno"
+                  />
+                  {errors.maternalLastName && (
+                    <p className="mt-1 text-xs text-red-500">{errors.maternalLastName}</p>
+                  )}
+                </div>
               </div>
 
               <div>

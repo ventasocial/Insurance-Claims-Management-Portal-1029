@@ -162,12 +162,14 @@ export const AuthProvider = ({ children }) => {
       });
 
       if (error) {
+        console.error('Error de login:', error);
         return { success: false, error: error.message };
       }
 
       // Los datos del usuario se configuran en el efecto de onAuthStateChange
       return { success: true };
     } catch (error) {
+      console.error('Error en login:', error);
       return { success: false, error: 'Error al iniciar sesión' };
     }
   };
