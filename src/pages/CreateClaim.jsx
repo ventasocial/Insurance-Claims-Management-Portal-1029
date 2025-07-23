@@ -4,7 +4,6 @@ import { useNavigate } from 'react-router-dom';
 import * as FiIcons from 'react-icons/fi';
 import SafeIcon from '../common/SafeIcon';
 import InsuredPersonsList from '../components/InsuredPersonsList';
-import { supabase } from '../lib/supabase';
 
 const { FiUser, FiMail, FiPhone, FiFileText, FiUpload, FiX, FiAlertCircle, FiCheck } = FiIcons;
 
@@ -271,23 +270,17 @@ const CreateClaim = () => {
     setLoading(true);
     try {
       if (formData.saveCustomerDetails) {
-        // En un entorno real, aquí guardaríamos el asegurado en Supabase
-        console.log('Guardando asegurado en Supabase:', {
+        // Simulación de guardado exitoso
+        console.log('Guardando asegurado:', {
           full_name: formData.customerName,
           email: formData.customerEmail,
           whatsapp: formData.customerWhatsApp,
           policy_number: formData.policyNumber,
           insurance: formData.insurance
         });
-        // Simular éxito o error
-        if (Math.random() > 0.1) { // 90% de éxito
-          console.log('Asegurado guardado correctamente');
-        } else {
-          throw new Error('Error simulado al guardar asegurado');
-        }
       }
       
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      await new Promise(resolve => setTimeout(resolve, 1000));
       alert('Reclamo creado exitosamente');
       navigate('/dashboard');
     } catch (error) {
@@ -716,7 +709,7 @@ const CreateClaim = () => {
                   </div>
                 </div>
 
-                {/* Checkbox para titular de cuenta bancaria (movido al final) */}
+                {/* Checkbox para titular de cuenta bancaria */}
                 <div className="mt-4 p-4 bg-green-100 border border-green-300 rounded-md">
                   <div className="flex items-center">
                     <input

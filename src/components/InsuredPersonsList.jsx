@@ -1,46 +1,38 @@
-import React, { useEffect, useState } from 'react';
-import { supabase } from '../lib/supabase';
+import React, { useState } from 'react';
 import * as FiIcons from 'react-icons/fi';
 import SafeIcon from '../common/SafeIcon';
 
 const { FiTrash2, FiUser } = FiIcons;
 
+// Datos de ejemplo para desarrollo
+const mockInsuredPersons = [
+  {
+    id: '1',
+    full_name: 'Juan Pérez García',
+    email: 'juan.perez@email.com',
+    whatsapp: '+52 55 1234 5678',
+    policy_number: 'POL-2024-001',
+    insurance: 'GNP',
+    created_at: '2024-01-15T10:30:00'
+  },
+  {
+    id: '2',
+    full_name: 'María López Hernández',
+    email: 'maria.lopez@email.com',
+    whatsapp: '+52 55 9876 5432',
+    policy_number: 'POL-2024-002',
+    insurance: 'AXA',
+    created_at: '2024-01-10T14:45:00'
+  }
+];
+
 const InsuredPersonsList = ({ onSelectPerson }) => {
-  const [insuredPersons, setInsuredPersons] = useState([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    fetchInsuredPersons();
-  }, []);
-
-  const fetchInsuredPersons = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('insured_persons_x7k9j2')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-      setInsuredPersons(data || []);
-    } catch (error) {
-      console.error('Error fetching insured persons:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const [insuredPersons, setInsuredPersons] = useState(mockInsuredPersons);
+  const [loading, setLoading] = useState(false);
 
   const handleDelete = async (id) => {
-    try {
-      const { error } = await supabase
-        .from('insured_persons_x7k9j2')
-        .delete()
-        .eq('id', id);
-
-      if (error) throw error;
-      setInsuredPersons(prev => prev.filter(person => person.id !== id));
-    } catch (error) {
-      console.error('Error deleting insured person:', error);
-    }
+    // Simulación de eliminación
+    setInsuredPersons(prev => prev.filter(person => person.id !== id));
   };
 
   if (loading) {
@@ -59,10 +51,7 @@ const InsuredPersonsList = ({ onSelectPerson }) => {
       ) : (
         <div className="grid gap-4 md:grid-cols-2">
           {insuredPersons.map((person) => (
-            <div
-              key={person.id}
-              className="bg-white p-4 rounded-lg border border-gray-200 hover:border-primary transition-colors"
-            >
+            <div key={person.id} className="bg-white p-4 rounded-lg border border-gray-200 hover:border-primary transition-colors">
               <div className="flex justify-between items-start">
                 <button
                   onClick={() => onSelectPerson(person)}
