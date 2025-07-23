@@ -3,8 +3,10 @@ import Layout from '../components/Layout';
 import { useNavigate } from 'react-router-dom';
 import * as FiIcons from 'react-icons/fi';
 import SafeIcon from '../common/SafeIcon';
+import InsuredPersonsList from '../components/InsuredPersonsList';
+import { supabase } from '../lib/supabase';
 
-const { FiUser, FiMail, FiPhone, FiFileText, FiUpload, FiX, FiAlertCircle } = FiIcons;
+const { FiUser, FiMail, FiPhone, FiFileText, FiUpload, FiX, FiAlertCircle, FiCheck } = FiIcons;
 
 const CreateClaim = () => {
   const navigate = useNavigate();
@@ -20,26 +22,31 @@ const CreateClaim = () => {
     claimInitialType: '',
     previousClaimNumber: '',
     description: '',
-    saveCustomerDetails: true
+    saveCustomerDetails: true,
+    isTitularCuentaBancaria: false
   });
-  const [documents, setDocuments] = useState([]);
+
+  const [documents, setDocuments] = useState({
+    section1: [],
+    section2: [],
+    section3: []
+  });
+
   const [loading, setLoading] = useState(false);
   const [whatsappError, setWhatsappError] = useState('');
+  const [showInsuredList, setShowInsuredList] = useState(false);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    
     if (name === 'customerWhatsApp') {
-      // Validar que el WhatsApp incluya código de país
       if (value && !value.startsWith('+')) {
         setWhatsappError('El número debe incluir el código de país (ej. +52)');
       } else {
         setWhatsappError('');
       }
     }
-    
+
     setFormData(prev => {
-      // Si cambiamos el tipo de reclamo, resetear los servicios seleccionados
       if (name === 'claimType') {
         return {
           ...prev,
@@ -50,7 +57,10 @@ const CreateClaim = () => {
           previousClaimNumber: ''
         };
       }
-      return { ...prev, [name]: value };
+      return {
+        ...prev,
+        [name]: value
+      };
     });
   };
 
@@ -73,7 +83,6 @@ const CreateClaim = () => {
         currentServices.splice(serviceIndex, 1);
       }
 
-      // Si quitamos Cirugía, resetear el checkbox de traumatología
       if (service === 'Cirugía' && serviceIndex !== -1) {
         return {
           ...prev,
@@ -106,20 +115,48 @@ const CreateClaim = () => {
     }
   };
 
-  const handleFileUpload = (e) => {
+  const handleFileUpload = (e, section) => {
     const files = Array.from(e.target.files);
-    const newDocuments = files.map(file => ({
+    const allowedTypes = ['application/pdf', 'image/png', 'image/jpeg', 'image/jpg'];
+    const maxFileSize = 10 * 1024 * 1024; // 10MB
+    const maxFiles = 5; // Máximo 5 archivos por campo
+
+    const validFiles = files.filter(file => {
+      if (!allowedTypes.includes(file.type)) {
+        alert(`Archivo ${file.name} no es válido. Solo se permiten PDF, PNG y JPG.`);
+        return false;
+      }
+      if (file.size > maxFileSize) {
+        alert(`Archivo ${file.name} es muy grande. Máximo 10MB por archivo.`);
+        return false;
+      }
+      return true;
+    });
+
+    if (validFiles.length > maxFiles) {
+      alert(`Solo se permiten máximo ${maxFiles} archivos por campo.`);
+      validFiles.splice(maxFiles);
+    }
+
+    const newDocuments = validFiles.map(file => ({
       id: Date.now() + Math.random(),
       name: file.name,
       size: file.size,
       type: file.type,
       file: file
     }));
-    setDocuments(prev => [...prev, ...newDocuments]);
+
+    setDocuments(prev => ({
+      ...prev,
+      [section]: [...prev[section], ...newDocuments]
+    }));
   };
 
-  const removeDocument = (id) => {
-    setDocuments(prev => prev.filter(doc => doc.id !== id));
+  const removeDocument = (id, section) => {
+    setDocuments(prev => ({
+      ...prev,
+      [section]: prev[section].filter(doc => doc.id !== id)
+    }));
   };
 
   const formatFileSize = (bytes) => {
@@ -130,20 +167,142 @@ const CreateClaim = () => {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
 
+  // Función para obtener los campos de la Sección 1
+  const getSection1Fields = () => {
+    if (formData.insurance === 'GNP' && formData.claimType === 'Reembolso') {
+      return [
+        'Aviso de Accidente o Enfermedad',
+        'Formato de Reembolso',
+        'Formato Único de Información Bancaria'
+      ];
+    }
+    if (formData.insurance === 'AXA' && formData.claimType === 'Reembolso') {
+      return ['Solicitud de Reembolso'];
+    }
+    if (formData.insurance === 'AXA' && formData.claimType === 'Programación') {
+      return ['Solicitud de Programación'];
+    }
+    return [];
+  };
+
+  // Función para obtener los campos de la Sección 3
+  const getSection3Fields = () => {
+    const fields = [];
+    
+    // Cirugía de Traumatología, Ortopedia y Neurología (GNP)
+    if (formData.insurance === 'GNP' && formData.claimType === 'Programación' && 
+        formData.serviceTypes.includes('Cirugía') && formData.isTraumaOrthopedicSurgery) {
+      fields.push('Forma de Cirugía de Traumatología, Ortopedia y Neurología');
+      fields.push('Interpretación de Estudios que corroboren el diagnóstico');
+    }
+    // Cirugía general (GNP o AXA)
+    else if ((formData.insurance === 'GNP' || formData.insurance === 'AXA') && 
+             formData.claimType === 'Programación' && formData.serviceTypes.includes('Cirugía')) {
+      fields.push('Interpretación de Estudios que corroboren el diagnóstico');
+    }
+
+    // Medicamentos - Programación
+    if ((formData.insurance === 'GNP' || formData.insurance === 'AXA') && 
+        formData.claimType === 'Programación' && formData.serviceTypes.includes('Medicamentos')) {
+      fields.push('Recetas de Medicamentos incluyendo dosis y periodo de administración');
+      if (!fields.includes('Interpretación de Estudios que corroboren el diagnóstico (opcional)')) {
+        fields.push('Interpretación de Estudios que corroboren el diagnóstico (opcional)');
+      }
+    }
+
+    // Rehabilitaciones - Programación
+    if ((formData.insurance === 'GNP' || formData.insurance === 'AXA') && 
+        formData.claimType === 'Programación' && formData.serviceTypes.includes('Terapia/Rehabilitación')) {
+      fields.push('Bitácora del Médico Indicando: Terapias, Sesiones y Tiempos');
+      if (!fields.includes('Interpretación de Estudios que corroboren el diagnóstico')) {
+        fields.push('Interpretación de Estudios que corroboren el diagnóstico');
+      }
+    }
+
+    // Reembolso - Hospital
+    if ((formData.insurance === 'GNP' || formData.insurance === 'AXA') && 
+        formData.claimType === 'Reembolso' && formData.serviceTypes.includes('Hospital')) {
+      fields.push('Facturas de Hospitales');
+    }
+
+    // Reembolso - Honorarios Médicos
+    if ((formData.insurance === 'GNP' || formData.insurance === 'AXA') && 
+        formData.claimType === 'Reembolso' && formData.serviceTypes.includes('Honorarios Médicos')) {
+      fields.push('Facturas de Honorarios Médicos');
+    }
+
+    // Reembolso - Medicamentos
+    if ((formData.insurance === 'GNP' || formData.insurance === 'AXA') && 
+        formData.claimType === 'Reembolso' && formData.serviceTypes.includes('Medicamentos')) {
+      fields.push('Facturas de Medicamentos');
+      fields.push('Recetas de Medicamentos incluyendo dosis y periodo de administración');
+    }
+
+    // Reembolso - Estudios
+    if ((formData.insurance === 'GNP' || formData.insurance === 'AXA') && 
+        formData.claimType === 'Reembolso' && formData.serviceTypes.includes('Estudios de Laboratorio e Imagenología')) {
+      fields.push('Facturas de Estudios de Laboratorio e Imagenología');
+      fields.push('Estudios de Laboratorio e Imagenología');
+    }
+
+    return [...new Set(fields)]; // Eliminar duplicados
+  };
+
+  const handleSelectInsured = (person) => {
+    setFormData(prev => ({
+      ...prev,
+      customerName: person.full_name,
+      customerEmail: person.email,
+      customerWhatsApp: person.whatsapp,
+      policyNumber: person.policy_number,
+      insurance: person.insurance
+    }));
+    setShowInsuredList(false);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    // Validar WhatsApp
     if (!formData.customerWhatsApp.startsWith('+')) {
       setWhatsappError('El número debe incluir el código de país (ej. +52)');
       return;
     }
-    
+
     setLoading(true);
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    alert('Reclamo creado exitosamente');
-    navigate('/dashboard');
+    try {
+      if (formData.saveCustomerDetails) {
+        // En un entorno real, aquí guardaríamos el asegurado en Supabase
+        console.log('Guardando asegurado en Supabase:', {
+          full_name: formData.customerName,
+          email: formData.customerEmail,
+          whatsapp: formData.customerWhatsApp,
+          policy_number: formData.policyNumber,
+          insurance: formData.insurance
+        });
+        // Simular éxito o error
+        if (Math.random() > 0.1) { // 90% de éxito
+          console.log('Asegurado guardado correctamente');
+        } else {
+          throw new Error('Error simulado al guardar asegurado');
+        }
+      }
+      
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      alert('Reclamo creado exitosamente');
+      navigate('/dashboard');
+    } catch (error) {
+      console.error('Error:', error);
+      alert('Error al crear el reclamo: ' + error.message);
+    } finally {
+      setLoading(false);
+    }
   };
+
+  const section1Fields = getSection1Fields();
+  const section3Fields = getSection3Fields();
+  const showSection2ForReembolso = (formData.insurance === 'GNP' || formData.insurance === 'AXA') && formData.claimType === 'Reembolso';
+  const showSection2ForProgramacion = (formData.insurance === 'GNP' || formData.insurance === 'AXA') && formData.claimType === 'Programación';
+  const showSection2 = showSection2ForReembolso || showSection2ForProgramacion;
 
   return (
     <Layout title="Crear Nuevo Reclamo">
@@ -151,6 +310,21 @@ const CreateClaim = () => {
         <div className="mb-6">
           <h2 className="text-2xl font-bold text-gray-900">Crear Nuevo Reclamo</h2>
           <p className="text-gray-600">Completa la información para crear tu reclamo de seguro</p>
+        </div>
+
+        <div className="mb-6">
+          <button 
+            onClick={() => setShowInsuredList(!showInsuredList)} 
+            className="bg-primary text-white px-4 py-2 rounded-md hover:bg-primary-dark transition-colors"
+          >
+            {showInsuredList ? 'Ocultar Asegurados' : 'Seleccionar Asegurado Guardado'}
+          </button>
+          
+          {showInsuredList && (
+            <div className="mt-4 bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+              <InsuredPersonsList onSelectPerson={handleSelectInsured} />
+            </div>
+          )}
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-8">
@@ -224,7 +398,7 @@ const CreateClaim = () => {
                   placeholder="Número de póliza"
                 />
               </div>
-              
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Aseguradora *
@@ -243,7 +417,7 @@ const CreateClaim = () => {
                 </select>
               </div>
             </div>
-            
+
             <div className="mt-6 pt-4 border-t border-gray-200">
               <div className="flex items-center">
                 <input
@@ -269,7 +443,6 @@ const CreateClaim = () => {
             </div>
 
             <div className="space-y-6">
-              {/* Campos principales */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -309,7 +482,6 @@ const CreateClaim = () => {
                 )}
               </div>
 
-              {/* Número de Reclamo condicional */}
               {formData.claimType === 'Reembolso' && formData.claimInitialType === 'Complemento' && (
                 <div className="mt-4">
                   <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -327,7 +499,6 @@ const CreateClaim = () => {
                 </div>
               )}
 
-              {/* Campos condicionales */}
               {formData.claimType && (
                 <div className="mt-6 border-t border-gray-200 pt-6">
                   <label className="block text-sm font-medium text-gray-700 mb-3">
@@ -365,10 +536,7 @@ const CreateClaim = () => {
                       }))}
                       className="h-4 w-4 text-primary border-gray-300 rounded focus:ring-primary"
                     />
-                    <label
-                      htmlFor="isTraumaOrthopedicSurgery"
-                      className="ml-2 text-sm font-medium text-yellow-800"
-                    >
+                    <label htmlFor="isTraumaOrthopedicSurgery" className="ml-2 text-sm font-medium text-yellow-800">
                       Marca esta casilla si quieres programar una Cirugía de Traumatología, Ortopedia o Neurología
                     </label>
                   </div>
@@ -391,72 +559,306 @@ const CreateClaim = () => {
             </div>
           </div>
 
-          {/* Documentos */}
-          <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-            <div className="flex items-center space-x-2 mb-6">
-              <SafeIcon icon={FiUpload} className="w-5 h-5 text-primary" />
-              <h3 className="text-lg font-medium text-gray-900">Documentos</h3>
-            </div>
-
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Subir documentos (facturas, recetas, carnets, etc.)
-                </label>
-                <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-primary transition-colors">
-                  <SafeIcon icon={FiUpload} className="w-8 h-8 text-gray-400 mx-auto mb-2" />
-                  <p className="text-sm text-gray-600 mb-2">
-                    Arrastra archivos aquí o haz clic para seleccionar
-                  </p>
-                  <input
-                    type="file"
-                    multiple
-                    accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
-                    onChange={handleFileUpload}
-                    className="hidden"
-                    id="file-upload"
-                  />
-                  <label
-                    htmlFor="file-upload"
-                    className="inline-block bg-primary text-white px-4 py-2 rounded-md text-sm cursor-pointer hover:bg-primary-dark transition-colors"
-                  >
-                    Seleccionar archivos
-                  </label>
-                  <p className="text-xs text-gray-500 mt-2">
-                    PDF, JPG, PNG, DOC, DOCX - Máximo 10MB por archivo
-                  </p>
-                </div>
+          {/* Sección 1: Firmas de Formas de Aseguradora */}
+          {section1Fields.length > 0 && (
+            <div className="bg-blue-50 border border-blue-200 p-6 rounded-lg shadow-sm">
+              <div className="flex items-center space-x-2 mb-6">
+                <SafeIcon icon={FiFileText} className="w-5 h-5 text-blue-600" />
+                <h3 className="text-lg font-medium text-blue-900">Sección 1: Firmas de Formas de Aseguradora</h3>
               </div>
 
-              {documents.length > 0 && (
-                <div>
-                  <h4 className="text-sm font-medium text-gray-700 mb-3">
-                    Archivos seleccionados ({documents.length})
-                  </h4>
-                  <div className="space-y-2">
-                    {documents.map((doc) => (
-                      <div key={doc.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-md">
-                        <div className="flex items-center space-x-3">
-                          <SafeIcon icon={FiFileText} className="w-5 h-5 text-gray-500" />
-                          <div>
-                            <p className="text-sm font-medium text-gray-900">{doc.name}</p>
-                            <p className="text-xs text-gray-500">{formatFileSize(doc.size)}</p>
-                          </div>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => removeDocument(doc.id)}
-                          className="text-red-500 hover:text-red-700 transition-colors"
+              <div className="space-y-6">
+                {section1Fields.map((field, index) => (
+                  <div key={index} className="space-y-2">
+                    <label className="block text-sm font-medium text-blue-800 mb-2">
+                      {field} *
+                    </label>
+                    <div className="border-2 border-dashed border-blue-300 rounded-lg p-4 bg-white hover:border-blue-400 transition-colors">
+                      <div className="text-center">
+                        <SafeIcon icon={FiUpload} className="w-6 h-6 text-blue-400 mx-auto mb-2" />
+                        <p className="text-sm text-blue-600 mb-2">Subir documentos (PDF, PNG, JPG)</p>
+                        <input
+                          type="file"
+                          multiple
+                          accept=".pdf,.png,.jpg,.jpeg"
+                          onChange={(e) => handleFileUpload(e, 'section1')}
+                          className="hidden"
+                          id={`section1-${index}`}
+                        />
+                        <label
+                          htmlFor={`section1-${index}`}
+                          className="inline-block bg-blue-600 text-white px-4 py-2 rounded-md text-sm cursor-pointer hover:bg-blue-700 transition-colors"
                         >
-                          <SafeIcon icon={FiX} className="w-5 h-5" />
-                        </button>
+                          Seleccionar archivos
+                        </label>
+                        <p className="text-xs text-blue-500 mt-1">Máximo 5 archivos, 10MB cada uno</p>
                       </div>
-                    ))}
+                    </div>
+
+                    {documents.section1.length > 0 && (
+                      <div className="mt-3">
+                        <div className="space-y-2">
+                          {documents.section1.map((doc) => (
+                            <div key={doc.id} className="flex items-center justify-between p-2 bg-white rounded border border-blue-200">
+                              <div className="flex items-center space-x-2">
+                                <SafeIcon icon={FiCheck} className="w-4 h-4 text-green-500" />
+                                <span className="text-sm text-gray-900">{doc.name}</span>
+                                <span className="text-xs text-gray-500">({formatFileSize(doc.size)})</span>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => removeDocument(doc.id, 'section1')}
+                                className="text-red-500 hover:text-red-700 transition-colors"
+                              >
+                                <SafeIcon icon={FiX} className="w-4 h-4" />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Sección 2: Documentos del Siniestro */}
+          {showSection2 && (
+            <div className="bg-green-50 border border-green-200 p-6 rounded-lg shadow-sm">
+              <div className="flex items-center space-x-2 mb-6">
+                <SafeIcon icon={FiFileText} className="w-5 h-5 text-green-600" />
+                <h3 className="text-lg font-medium text-green-900">Sección 2: Documentos del Siniestro</h3>
+              </div>
+
+              <div className="space-y-6">
+                {/* Informe Médico */}
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium text-green-800 mb-2">
+                    Informe Médico *
+                  </label>
+                  <div className="border-2 border-dashed border-green-300 rounded-lg p-4 bg-white hover:border-green-400 transition-colors">
+                    <div className="text-center">
+                      <SafeIcon icon={FiUpload} className="w-6 h-6 text-green-400 mx-auto mb-2" />
+                      <p className="text-sm text-green-600 mb-2">Subir documentos (PDF, PNG, JPG)</p>
+                      <input
+                        type="file"
+                        multiple
+                        accept=".pdf,.png,.jpg,.jpeg"
+                        onChange={(e) => handleFileUpload(e, 'section2')}
+                        className="hidden"
+                        id="informe-medico"
+                      />
+                      <label
+                        htmlFor="informe-medico"
+                        className="inline-block bg-green-600 text-white px-4 py-2 rounded-md text-sm cursor-pointer hover:bg-green-700 transition-colors"
+                      >
+                        Seleccionar archivos
+                      </label>
+                      <p className="text-xs text-green-500 mt-1">Máximo 5 archivos, 10MB cada uno</p>
+                    </div>
                   </div>
                 </div>
-              )}
+
+                {/* Identificación Oficial del Asegurado Afectado */}
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium text-green-800 mb-2">
+                    Identificación Oficial del Asegurado Afectado *
+                  </label>
+                  <div className="border-2 border-dashed border-green-300 rounded-lg p-4 bg-white hover:border-green-400 transition-colors">
+                    <div className="text-center">
+                      <SafeIcon icon={FiUpload} className="w-6 h-6 text-green-400 mx-auto mb-2" />
+                      <p className="text-sm text-green-600 mb-2">Subir documentos (PDF, PNG, JPG)</p>
+                      <input
+                        type="file"
+                        multiple
+                        accept=".pdf,.png,.jpg,.jpeg"
+                        onChange={(e) => handleFileUpload(e, 'section2')}
+                        className="hidden"
+                        id="id-asegurado"
+                      />
+                      <label
+                        htmlFor="id-asegurado"
+                        className="inline-block bg-green-600 text-white px-4 py-2 rounded-md text-sm cursor-pointer hover:bg-green-700 transition-colors"
+                      >
+                        Seleccionar archivos
+                      </label>
+                      <p className="text-xs text-green-500 mt-1">Máximo 5 archivos, 10MB cada uno</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Carátula del Estado de Cuenta Bancaria */}
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium text-green-800 mb-2">
+                    Carátula del Estado de Cuenta Bancaria *
+                  </label>
+                  <div className="border-2 border-dashed border-green-300 rounded-lg p-4 bg-white hover:border-green-400 transition-colors">
+                    <div className="text-center">
+                      <SafeIcon icon={FiUpload} className="w-6 h-6 text-green-400 mx-auto mb-2" />
+                      <p className="text-sm text-green-600 mb-2">Subir documentos (PDF, PNG, JPG)</p>
+                      <input
+                        type="file"
+                        multiple
+                        accept=".pdf,.png,.jpg,.jpeg"
+                        onChange={(e) => handleFileUpload(e, 'section2')}
+                        className="hidden"
+                        id="estado-cuenta"
+                      />
+                      <label
+                        htmlFor="estado-cuenta"
+                        className="inline-block bg-green-600 text-white px-4 py-2 rounded-md text-sm cursor-pointer hover:bg-green-700 transition-colors"
+                      >
+                        Seleccionar archivos
+                      </label>
+                      <p className="text-xs text-green-500 mt-1">Máximo 5 archivos, 10MB cada uno</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Checkbox para titular de cuenta bancaria (movido al final) */}
+                <div className="mt-4 p-4 bg-green-100 border border-green-300 rounded-md">
+                  <div className="flex items-center">
+                    <input
+                      type="checkbox"
+                      id="isTitularCuentaBancaria"
+                      name="isTitularCuentaBancaria"
+                      checked={formData.isTitularCuentaBancaria}
+                      onChange={handleCheckboxChange}
+                      className="h-4 w-4 text-green-600 border-gray-300 rounded focus:ring-green-500"
+                    />
+                    <label htmlFor="isTitularCuentaBancaria" className="ml-2 text-sm font-medium text-green-800">
+                      El Asegurado Afectado es el Titular de la Cuenta Bancaria
+                    </label>
+                  </div>
+                </div>
+
+                {/* Identificación del Titular de Cuenta Bancaria (condicional) */}
+                {!formData.isTitularCuentaBancaria && (
+                  <div className="space-y-2">
+                    <label className="block text-sm font-medium text-green-800 mb-2">
+                      Identificación Oficial del Titular de la Cuenta Bancaria *
+                    </label>
+                    <div className="border-2 border-dashed border-green-300 rounded-lg p-4 bg-white hover:border-green-400 transition-colors">
+                      <div className="text-center">
+                        <SafeIcon icon={FiUpload} className="w-6 h-6 text-green-400 mx-auto mb-2" />
+                        <p className="text-sm text-green-600 mb-2">Subir documentos (PDF, PNG, JPG)</p>
+                        <input
+                          type="file"
+                          multiple
+                          accept=".pdf,.png,.jpg,.jpeg"
+                          onChange={(e) => handleFileUpload(e, 'section2')}
+                          className="hidden"
+                          id="id-titular-bancario"
+                        />
+                        <label
+                          htmlFor="id-titular-bancario"
+                          className="inline-block bg-green-600 text-white px-4 py-2 rounded-md text-sm cursor-pointer hover:bg-green-700 transition-colors"
+                        >
+                          Seleccionar archivos
+                        </label>
+                        <p className="text-xs text-green-500 mt-1">Máximo 5 archivos, 10MB cada uno</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {documents.section2.length > 0 && (
+                  <div className="mt-4">
+                    <h4 className="text-sm font-medium text-green-800 mb-3">
+                      Archivos de Sección 2 ({documents.section2.length})
+                    </h4>
+                    <div className="space-y-2">
+                      {documents.section2.map((doc) => (
+                        <div key={doc.id} className="flex items-center justify-between p-2 bg-white rounded border border-green-200">
+                          <div className="flex items-center space-x-2">
+                            <SafeIcon icon={FiCheck} className="w-4 h-4 text-green-500" />
+                            <span className="text-sm text-gray-900">{doc.name}</span>
+                            <span className="text-xs text-gray-500">({formatFileSize(doc.size)})</span>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => removeDocument(doc.id, 'section2')}
+                            className="text-red-500 hover:text-red-700 transition-colors"
+                          >
+                            <SafeIcon icon={FiX} className="w-4 h-4" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
-          </div>
+          )}
+
+          {/* Sección 3: Facturas, Recetas, Estudios y Otros Documentos */}
+          {section3Fields.length > 0 && (
+            <div className="bg-orange-50 border border-orange-200 p-6 rounded-lg shadow-sm">
+              <div className="flex items-center space-x-2 mb-6">
+                <SafeIcon icon={FiFileText} className="w-5 h-5 text-orange-600" />
+                <h3 className="text-lg font-medium text-orange-900">Sección 3: Facturas, Recetas, Estudios y Otros Documentos</h3>
+              </div>
+
+              <div className="space-y-6">
+                {section3Fields.map((field, index) => (
+                  <div key={index} className="space-y-2">
+                    <label className="block text-sm font-medium text-orange-800 mb-2">
+                      {field} {field.includes('(opcional)') ? '' : '*'}
+                    </label>
+                    <div className="border-2 border-dashed border-orange-300 rounded-lg p-4 bg-white hover:border-orange-400 transition-colors">
+                      <div className="text-center">
+                        <SafeIcon icon={FiUpload} className="w-6 h-6 text-orange-400 mx-auto mb-2" />
+                        <p className="text-sm text-orange-600 mb-2">Subir documentos (PDF, PNG, JPG)</p>
+                        <input
+                          type="file"
+                          multiple
+                          accept=".pdf,.png,.jpg,.jpeg"
+                          onChange={(e) => handleFileUpload(e, 'section3')}
+                          className="hidden"
+                          id={`section3-${index}`}
+                          required={!field.includes('(opcional)')}
+                        />
+                        <label
+                          htmlFor={`section3-${index}`}
+                          className="inline-block bg-orange-600 text-white px-4 py-2 rounded-md text-sm cursor-pointer hover:bg-orange-700 transition-colors"
+                        >
+                          Seleccionar archivos
+                        </label>
+                        <p className="text-xs text-orange-500 mt-1">Máximo 5 archivos, 10MB cada uno</p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+
+                {documents.section3.length > 0 && (
+                  <div className="mt-4">
+                    <h4 className="text-sm font-medium text-orange-800 mb-3">
+                      Archivos de Sección 3 ({documents.section3.length})
+                    </h4>
+                    <div className="space-y-2">
+                      {documents.section3.map((doc) => (
+                        <div key={doc.id} className="flex items-center justify-between p-2 bg-white rounded border border-orange-200">
+                          <div className="flex items-center space-x-2">
+                            <SafeIcon icon={FiCheck} className="w-4 h-4 text-green-500" />
+                            <span className="text-sm text-gray-900">{doc.name}</span>
+                            <span className="text-xs text-gray-500">({formatFileSize(doc.size)})</span>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => removeDocument(doc.id, 'section3')}
+                            className="text-red-500 hover:text-red-700 transition-colors"
+                          >
+                            <SafeIcon icon={FiX} className="w-4 h-4" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
 
           {/* Botones */}
           <div className="flex flex-col sm:flex-row justify-end space-y-3 sm:space-y-0 sm:space-x-4">
