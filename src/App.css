@@ -1,0 +1,58 @@
+.app-container {
+  min-height: 100vh;
+  background-color: #f9fafb;
+}
+
+/* Estilos adicionales para mejorar la experiencia */
+.transition-colors {
+  transition: color 0.2s ease-in-out;
+}
+
+.hover\:bg-gray-50:hover {
+  background-color: #f9fafb;
+}
+
+.focus\:ring-primary:focus {
+  --tw-ring-color: #204499FF;
+}
+
+.focus\:border-primary:focus {
+  border-color: #204499FF;
+}
+
+/* Animación de carga */
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
+
+/* Mejoras de accesibilidad */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Estilos para formularios */
+input:focus, select:focus, textarea:focus {
+  outline: none;
+  box-shadow: 0 0 0 1px #204499FF;
+}
+
+/* Responsive design mejorado */
+@media (max-width: 640px) {
+  .grid-cols-1 {
+    grid-template-columns: repeat(1, minmax(0, 1fr));
+  }
+}
