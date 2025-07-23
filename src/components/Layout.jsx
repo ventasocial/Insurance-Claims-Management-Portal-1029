@@ -1,14 +1,15 @@
 import React from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import * as FiIcons from 'react-icons/fi';
 import SafeIcon from '../common/SafeIcon';
 
-const { FiLogOut, FiUser, FiHome } = FiIcons;
+const { FiLogOut, FiUser, FiHome, FiUsers } = FiIcons;
 
 const Layout = ({ children, title }) => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
 
   const handleLogout = () => {
     logout();
@@ -16,12 +17,22 @@ const Layout = ({ children, title }) => {
   };
 
   const handleHome = () => {
-    if (user?.role === 'admin') {
+    if (user?.role === 'admin' || user?.role === 'staff') {
       navigate('/admin');
     } else {
       navigate('/dashboard');
     }
   };
+
+  const handleUsersManagement = () => {
+    navigate('/admin/usuarios');
+  };
+
+  // Determinar si el usuario actual es administrador
+  const isAdmin = user?.role === 'admin';
+  
+  // Verificar si estamos en la página de gestión de usuarios
+  const isUsersPage = location.pathname === '/admin/usuarios';
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -29,14 +40,13 @@ const Layout = ({ children, title }) => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center space-x-4">
-              <img 
-                src="https://storage.googleapis.com/msgsndr/HWRXLf7lstECUAG07eRw/media/685d77c05c72d29e532e823f.png" 
-                alt="Logo" 
+              <img
+                src="https://storage.googleapis.com/msgsndr/HWRXLf7lstECUAG07eRw/media/685d77c05c72d29e532e823f.png"
+                alt="Logo"
                 className="h-10 w-auto"
               />
               <h1 className="text-xl font-semibold text-gray-900">{title}</h1>
             </div>
-            
             <div className="flex items-center space-x-4">
               <button
                 onClick={handleHome}
@@ -46,14 +56,28 @@ const Layout = ({ children, title }) => {
                 <span>Inicio</span>
               </button>
               
+              {/* Botón de Usuarios solo para administradores y no visible en la página de usuarios */}
+              {isAdmin && !isUsersPage && (
+                <button
+                  onClick={handleUsersManagement}
+                  className="flex items-center space-x-2 text-gray-600 hover:text-primary transition-colors"
+                >
+                  <SafeIcon icon={FiUsers} className="w-5 h-5" />
+                  <span>Usuarios</span>
+                </button>
+              )}
+              
               <div className="flex items-center space-x-2 text-gray-700">
                 <SafeIcon icon={FiUser} className="w-5 h-5" />
                 <span className="text-sm">{user?.name}</span>
                 <span className="text-xs bg-primary text-white px-2 py-1 rounded-full">
-                  {user?.role === 'admin' ? 'Admin' : 'Cliente'}
+                  {user?.role === 'admin' 
+                    ? 'Admin' 
+                    : user?.role === 'staff'
+                      ? 'Staff'
+                      : 'Cliente'}
                 </span>
               </div>
-              
               <button
                 onClick={handleLogout}
                 className="flex items-center space-x-2 text-gray-600 hover:text-red-600 transition-colors"
@@ -65,10 +89,7 @@ const Layout = ({ children, title }) => {
           </div>
         </div>
       </header>
-      
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {children}
-      </main>
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">{children}</main>
     </div>
   );
 };

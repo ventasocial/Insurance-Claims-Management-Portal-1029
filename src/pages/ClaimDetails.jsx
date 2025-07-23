@@ -6,20 +6,9 @@ import { mockClaims } from '../data/mockData';
 import * as FiIcons from 'react-icons/fi';
 import SafeIcon from '../common/SafeIcon';
 
-const { 
-  FiArrowLeft, 
-  FiUser, 
-  FiMail, 
-  FiPhone, 
-  FiFileText, 
-  FiDownload, 
-  FiCheck, 
-  FiX, 
-  FiMessageSquare,
-  FiUpload,
-  FiAlertCircle,
-  FiClock,
-  FiEdit
+const {
+  FiArrowLeft, FiUser, FiMail, FiPhone, FiFileText, FiDownload, FiCheck, FiX, FiMessageSquare,
+  FiUpload, FiAlertCircle, FiClock, FiEdit, FiUserCheck, FiUserPlus, FiSave
 } = FiIcons;
 
 const ClaimDetails = () => {
@@ -29,10 +18,14 @@ const ClaimDetails = () => {
   const [newStatus, setNewStatus] = useState('');
   const [comment, setComment] = useState('');
   const [showCommentModal, setShowCommentModal] = useState(false);
+  const [showVerifiedModal, setShowVerifiedModal] = useState(false);
   const [currentDocId, setCurrentDocId] = useState(null);
   const [actionType, setActionType] = useState('');
   const [reuploadMode, setReuploadMode] = useState(null);
   const [documents, setDocuments] = useState({});
+  const [claimNumber, setClaimNumber] = useState('');
+  const [isEditingClaimNumber, setIsEditingClaimNumber] = useState(false);
+  const [activityLog, setActivityLog] = useState([]);
 
   // Generamos un código de reclamo único de 4 caracteres alfanuméricos
   const generateClaimCode = () => {
@@ -56,63 +49,103 @@ const ClaimDetails = () => {
           { 
             id: 'doc-1', 
             name: 'Aviso de Accidente o Enfermedad.pdf', 
-            type: 'Forma de Aseguradora',
-            status: 'recibido',
-            comment: '',
-            url: '#'
+            type: 'Forma de Aseguradora', 
+            status: 'recibido', 
+            comment: '', 
+            url: '#' 
           },
           { 
             id: 'doc-2', 
             name: 'Formato de Reembolso.pdf', 
-            type: 'Forma de Aseguradora',
-            status: 'aprobado',
-            comment: 'Documento correcto y completo',
-            url: '#'
+            type: 'Forma de Aseguradora', 
+            status: 'aprobado', 
+            comment: 'Documento correcto y completo', 
+            url: '#' 
           }
         ],
         'Documentos Médicos': [
           { 
             id: 'doc-3', 
             name: 'Informe Médico.pdf', 
-            type: 'Informe Médico',
-            status: 'rechazado',
-            comment: 'Falta firma del médico tratante y sello',
-            url: '#'
+            type: 'Informe Médico', 
+            status: 'rechazado', 
+            comment: 'Falta firma del médico tratante y sello', 
+            url: '#' 
           },
           { 
             id: 'doc-4', 
             name: 'Receta Médica.jpg', 
-            type: 'Receta',
-            status: 'aprobado',
-            comment: '',
-            url: '#'
+            type: 'Receta', 
+            status: 'aprobado', 
+            comment: '', 
+            url: '#' 
           }
         ],
         'Documentos de Identidad': [
           { 
             id: 'doc-5', 
             name: 'Identificación Oficial.jpg', 
-            type: 'Identificación',
-            status: 'aprobado',
-            comment: '',
-            url: '#'
+            type: 'Identificación', 
+            status: 'aprobado', 
+            comment: '', 
+            url: '#' 
           }
         ],
         'Facturas y Comprobantes': [
           { 
             id: 'doc-6', 
             name: 'Factura Hospital.pdf', 
-            type: 'Factura',
-            status: 'pendiente',
-            comment: 'Documento pendiente de recepción',
-            url: '#'
+            type: 'Factura', 
+            status: 'pendiente', 
+            comment: 'Documento pendiente de recepción', 
+            url: '#' 
           }
         ]
       };
-
       setDocuments(docStructure);
+      
+      // Inicializar historial de actividades
+      setActivityLog([
+        {
+          type: 'creation',
+          description: 'Reclamo creado',
+          timestamp: claim.date,
+          user: 'cliente'
+        },
+        {
+          type: 'review',
+          description: 'En revisión',
+          timestamp: new Date(new Date(claim.date).getTime() + 1000*60*60).toISOString().split('T')[0],
+          user: 'admin'
+        },
+        {
+          type: 'document',
+          description: 'Documento subido: Informe Médico',
+          timestamp: new Date(new Date(claim.date).getTime() + 1000*60*60*24).toISOString().split('T')[0],
+          user: 'cliente'
+        },
+        {
+          type: 'status',
+          description: 'Estatus: Pendiente',
+          timestamp: new Date(new Date(claim.date).getTime() + 1000*60*60*24*2).toISOString().split('T')[0],
+          user: 'admin'
+        }
+      ]);
     }
   }, [claim]);
+
+  useEffect(() => {
+    // Verificar si todos los documentos están aprobados
+    const allDocuments = Object.values(documents).flat();
+    const requiredDocuments = allDocuments.filter(doc => doc.status !== 'pendiente');
+    const allApproved = requiredDocuments.length > 0 && 
+                        requiredDocuments.every(doc => doc.status === 'aprobado');
+    
+    // Solo mostrar el modal si todos están aprobados y el reclamo no está ya verificado
+    if (allApproved && claim && claim.status !== 'Verificado' && !showVerifiedModal) {
+      setShowVerifiedModal(true);
+    }
+  }, [documents, claim, showVerifiedModal]);
 
   if (!claim) {
     return (
@@ -173,6 +206,17 @@ const ClaimDetails = () => {
 
   const handleStatusChange = () => {
     if (!newStatus) return;
+    
+    // Añadir al historial de actividad
+    const newActivity = {
+      type: 'status',
+      description: `Estatus: ${newStatus}`,
+      timestamp: new Date().toISOString().split('T')[0],
+      user: 'admin'
+    };
+    
+    setActivityLog([...activityLog, newActivity]);
+    
     // Simulación de cambio de estatus
     alert(`Estatus cambiado a: ${newStatus}`);
     setNewStatus('');
@@ -181,7 +225,6 @@ const ClaimDetails = () => {
   const handleDocumentAction = (action, docId) => {
     setCurrentDocId(docId);
     setActionType(action);
-    
     if (action === 'reject') {
       setShowCommentModal(true);
     } else if (action === 'approve') {
@@ -195,8 +238,22 @@ const ClaimDetails = () => {
         });
         documents[category] = updatedDocs;
       });
-      
       setDocuments({ ...documents });
+
+      // Añadir al historial de actividad
+      const docInfo = Object.values(documents)
+        .flat()
+        .find(doc => doc.id === docId);
+        
+      const newActivity = {
+        type: 'document',
+        description: `Documento aprobado: ${docInfo?.name || 'Documento'}`,
+        timestamp: new Date().toISOString().split('T')[0],
+        user: 'admin'
+      };
+      
+      setActivityLog([...activityLog, newActivity]);
+      
       alert(`Documento aprobado exitosamente`);
     }
   };
@@ -212,8 +269,22 @@ const ClaimDetails = () => {
       });
       documents[category] = updatedDocs;
     });
-    
     setDocuments({ ...documents });
+    
+    // Añadir al historial de actividad
+    const docInfo = Object.values(documents)
+      .flat()
+      .find(doc => doc.id === currentDocId);
+      
+    const newActivity = {
+      type: 'document',
+      description: `Documento rechazado: ${docInfo?.name || 'Documento'}`,
+      timestamp: new Date().toISOString().split('T')[0],
+      user: 'admin'
+    };
+    
+    setActivityLog([...activityLog, newActivity]);
+    
     setComment('');
     setShowCommentModal(false);
     alert(`Documento rechazado con comentario registrado`);
@@ -231,12 +302,12 @@ const ClaimDetails = () => {
     // Validación del archivo
     const allowedTypes = ['application/pdf', 'image/png', 'image/jpeg', 'image/jpg'];
     const maxFileSize = 10 * 1024 * 1024; // 10MB
-    
+
     if (!allowedTypes.includes(file.type)) {
       alert(`Archivo no válido. Solo se permiten PDF, PNG y JPG.`);
       return;
     }
-    
+
     if (file.size > maxFileSize) {
       alert(`Archivo muy grande. Máximo 10MB por archivo.`);
       return;
@@ -246,8 +317,8 @@ const ClaimDetails = () => {
     Object.keys(documents).forEach(category => {
       const updatedDocs = documents[category].map(doc => {
         if (doc.id === docId) {
-          return { 
-            ...doc, 
+          return {
+            ...doc,
             name: file.name,
             status: 'recibido',
             comment: 'Documento resubido, pendiente de revisión'
@@ -257,10 +328,56 @@ const ClaimDetails = () => {
       });
       documents[category] = updatedDocs;
     });
-    
     setDocuments({ ...documents });
+    
+    // Añadir al historial de actividad
+    const newActivity = {
+      type: 'document',
+      description: `Documento resubido: ${file.name}`,
+      timestamp: new Date().toISOString().split('T')[0],
+      user: 'cliente'
+    };
+    
+    setActivityLog([...activityLog, newActivity]);
+    
     setReuploadMode(null);
     alert(`Documento resubido exitosamente`);
+  };
+  
+  const handleVerifiedConfirm = () => {
+    // Cambiar estatus a verificado
+    setNewStatus('Verificado');
+    
+    // Añadir al historial de actividad
+    const newActivity = {
+      type: 'status',
+      description: 'Estatus: Verificado (todos los documentos aprobados)',
+      timestamp: new Date().toISOString().split('T')[0],
+      user: 'admin'
+    };
+    
+    setActivityLog([...activityLog, newActivity]);
+    
+    // Cerrar el modal y mostrar confirmación
+    setShowVerifiedModal(false);
+    alert('Reclamo marcado como Verificado');
+  };
+  
+  const handleSaveClaimNumber = () => {
+    if (claimNumber.trim()) {
+      alert(`Número de reclamo guardado: ${claimNumber}`);
+      
+      // Añadir al historial de actividad
+      const newActivity = {
+        type: 'edit',
+        description: `Número de reclamo actualizado: ${claimNumber}`,
+        timestamp: new Date().toISOString().split('T')[0],
+        user: 'admin'
+      };
+      
+      setActivityLog([...activityLog, newActivity]);
+    }
+    setIsEditingClaimNumber(false);
   };
 
   // Generar código de reclamo
@@ -294,10 +411,44 @@ const ClaimDetails = () => {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Información Principal */}
           <div className="lg:col-span-2 space-y-6">
-            {/* Información del Asegurado */}
-            <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+            {/* Información del Contacto - NUEVA SECCIÓN */}
+            <div className="bg-white p-6 rounded-lg shadow-sm border-l-4 border-blue-500">
               <div className="flex items-center space-x-2 mb-4">
-                <SafeIcon icon={FiUser} className="w-5 h-5 text-primary" />
+                <SafeIcon icon={FiUserPlus} className="w-5 h-5 text-blue-500" />
+                <h3 className="text-lg font-medium text-gray-900">Información del Contacto</h3>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                <div className="space-y-2">
+                  <div className="flex items-center space-x-2">
+                    <SafeIcon icon={FiUser} className="w-4 h-4 text-gray-500" />
+                    <span className="font-medium">Nombre:</span>
+                    <span>Carlos Mendoza Jiménez</span>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <SafeIcon icon={FiMail} className="w-4 h-4 text-gray-500" />
+                    <span className="font-medium">Email:</span>
+                    <span>carlos.mendoza@email.com</span>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <div className="flex items-center space-x-2">
+                    <SafeIcon icon={FiPhone} className="w-4 h-4 text-gray-500" />
+                    <span className="font-medium">WhatsApp:</span>
+                    <span>+52 55 9876 5432</span>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <SafeIcon icon={FiUserCheck} className="w-4 h-4 text-gray-500" />
+                    <span className="font-medium">Relación:</span>
+                    <span>Titular</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Información del Asegurado - CON NUEVO DISEÑO */}
+            <div className="bg-white p-6 rounded-lg shadow-sm border-l-4 border-green-500">
+              <div className="flex items-center space-x-2 mb-4">
+                <SafeIcon icon={FiUser} className="w-5 h-5 text-green-500" />
                 <h3 className="text-lg font-medium text-gray-900">Información del Asegurado</h3>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
@@ -328,7 +479,7 @@ const ClaimDetails = () => {
               </div>
             </div>
 
-            {/* Información del Reclamo */}
+            {/* Información del Reclamo - ACTUALIZADA CON ASEGURADORA Y NÚMERO DE RECLAMO */}
             <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
               <div className="flex items-center space-x-2 mb-4">
                 <SafeIcon icon={FiFileText} className="w-5 h-5 text-primary" />
@@ -342,6 +493,42 @@ const ClaimDetails = () => {
                 <div>
                   <span className="font-medium text-gray-700">Tipo de servicio:</span>
                   <p className="text-gray-900">{claim.serviceType}</p>
+                </div>
+                <div>
+                  <span className="font-medium text-gray-700">Aseguradora:</span>
+                  <p className="text-gray-900">{claim.insurance || "GNP"}</p>
+                </div>
+                <div>
+                  <span className="font-medium text-gray-700">Número de reclamo:</span>
+                  {isEditingClaimNumber ? (
+                    <div className="flex items-center mt-1">
+                      <input
+                        type="text"
+                        value={claimNumber}
+                        onChange={(e) => setClaimNumber(e.target.value)}
+                        className="border border-gray-300 rounded-md px-2 py-1 text-sm w-full"
+                        placeholder="Ingrese número de reclamo"
+                      />
+                      <button
+                        onClick={handleSaveClaimNumber}
+                        className="ml-2 text-green-600 hover:text-green-800"
+                      >
+                        <SafeIcon icon={FiSave} className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="flex items-center">
+                      <p className="text-gray-900">{claimNumber || "No asignado"}</p>
+                      {user?.role === 'admin' && (
+                        <button
+                          onClick={() => setIsEditingClaimNumber(true)}
+                          className="ml-2 text-gray-500 hover:text-gray-700"
+                        >
+                          <SafeIcon icon={FiEdit} className="w-4 h-4" />
+                        </button>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
               {claim.description && (
@@ -358,7 +545,6 @@ const ClaimDetails = () => {
                 <SafeIcon icon={FiFileText} className="w-5 h-5 text-primary" />
                 <h3 className="text-lg font-medium text-gray-900">Documentos</h3>
               </div>
-              
               {Object.keys(documents).length > 0 ? (
                 <div className="space-y-6">
                   {Object.keys(documents).map((category) => (
@@ -366,13 +552,16 @@ const ClaimDetails = () => {
                       <h4 className="text-md font-medium text-gray-800">{category}</h4>
                       <div className="space-y-4">
                         {documents[category].map((doc) => (
-                          <div 
-                            key={doc.id} 
+                          <div
+                            key={doc.id}
                             className={`border rounded-md ${
-                              doc.status === 'rechazado' ? 'border-red-200 bg-red-50' : 
-                              doc.status === 'aprobado' ? 'border-green-200 bg-green-50' : 
-                              doc.status === 'pendiente' ? 'border-orange-200 bg-orange-50' : 
-                              'border-blue-200 bg-blue-50'
+                              doc.status === 'rechazado'
+                                ? 'border-red-200 bg-red-50'
+                                : doc.status === 'aprobado'
+                                ? 'border-green-200 bg-green-50'
+                                : doc.status === 'pendiente'
+                                ? 'border-orange-200 bg-orange-50'
+                                : 'border-blue-200 bg-blue-50'
                             }`}
                           >
                             <div className="flex items-center justify-between p-3">
@@ -388,8 +577,8 @@ const ClaimDetails = () => {
                               </div>
                               <div className="flex items-center space-x-2">
                                 {doc.status !== 'pendiente' && (
-                                  <a 
-                                    href={doc.url} 
+                                  <a
+                                    href={doc.url}
                                     className="text-primary hover:text-primary-dark text-sm"
                                     target="_blank"
                                     rel="noopener noreferrer"
@@ -397,27 +586,25 @@ const ClaimDetails = () => {
                                     <SafeIcon icon={FiDownload} className="w-4 h-4" />
                                   </a>
                                 )}
-                                
                                 {user?.role === 'admin' && doc.status === 'recibido' && (
                                   <>
-                                    <button 
-                                      onClick={() => handleDocumentAction('approve', doc.id)} 
+                                    <button
+                                      onClick={() => handleDocumentAction('approve', doc.id)}
                                       className="text-green-600 hover:text-green-700 text-sm"
                                     >
                                       <SafeIcon icon={FiCheck} className="w-4 h-4" />
                                     </button>
-                                    <button 
-                                      onClick={() => handleDocumentAction('reject', doc.id)} 
+                                    <button
+                                      onClick={() => handleDocumentAction('reject', doc.id)}
                                       className="text-red-600 hover:text-red-700 text-sm"
                                     >
                                       <SafeIcon icon={FiX} className="w-4 h-4" />
                                     </button>
                                   </>
                                 )}
-                                
                                 {user?.role !== 'admin' && doc.status === 'rechazado' && (
-                                  <button 
-                                    onClick={() => handleReupload(doc.id)} 
+                                  <button
+                                    onClick={() => handleReupload(doc.id)}
                                     className="text-primary hover:text-primary-dark text-sm flex items-center space-x-1"
                                   >
                                     <SafeIcon icon={FiUpload} className="w-4 h-4" />
@@ -426,34 +613,34 @@ const ClaimDetails = () => {
                                 )}
                               </div>
                             </div>
-                            
                             {doc.comment && (
                               <div className="px-3 py-2 border-t border-gray-200 bg-white rounded-b-md">
                                 <div className="flex items-start space-x-2">
-                                  <SafeIcon icon={FiMessageSquare} className="w-4 h-4 text-gray-500 mt-0.5" />
+                                  <SafeIcon
+                                    icon={FiMessageSquare}
+                                    className="w-4 h-4 text-gray-500 mt-0.5"
+                                  />
                                   <div className="text-sm text-gray-700">
-                                    <p className="font-medium text-xs text-gray-500 mb-1">Comentario:</p>
+                                    <p className="font-medium text-xs text-gray-500 mb-1">
+                                      Comentario:
+                                    </p>
                                     {doc.comment}
                                   </div>
                                 </div>
                               </div>
                             )}
-                            
                             {reuploadMode === doc.id && (
                               <div className="p-3 border-t border-gray-200 bg-white rounded-b-md">
                                 <div className="flex flex-col space-y-2">
-                                  <p className="text-sm text-gray-700">Selecciona un nuevo archivo para subir:</p>
+                                  <p className="text-sm text-gray-700">
+                                    Selecciona un nuevo archivo para subir:
+                                  </p>
                                   <div className="flex flex-col space-y-2">
-                                    <input 
-                                      type="file" 
-                                      accept=".pdf,.png,.jpg,.jpeg" 
+                                    <input
+                                      type="file"
+                                      accept=".pdf,.png,.jpg,.jpeg"
                                       onChange={(e) => handleFileUpload(e, doc.id)}
-                                      className="block w-full text-sm text-gray-500
-                                        file:mr-4 file:py-2 file:px-4
-                                        file:rounded-md file:border-0
-                                        file:text-sm file:font-medium
-                                        file:bg-primary file:text-white
-                                        hover:file:bg-primary-dark"
+                                      className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-primary file:text-white hover:file:bg-primary-dark"
                                     />
                                     <button
                                       onClick={() => setReuploadMode(null)}
@@ -475,7 +662,9 @@ const ClaimDetails = () => {
                 <div className="text-center py-8">
                   <SafeIcon icon={FiAlertCircle} className="mx-auto h-12 w-12 text-gray-400" />
                   <h3 className="mt-2 text-sm font-medium text-gray-900">No hay documentos</h3>
-                  <p className="mt-1 text-sm text-gray-500">No se han encontrado documentos para este reclamo.</p>
+                  <p className="mt-1 text-sm text-gray-500">
+                    No se han encontrado documentos para este reclamo.
+                  </p>
                 </div>
               )}
             </div>
@@ -515,36 +704,35 @@ const ClaimDetails = () => {
               </div>
             )}
 
-            {/* Historial de Actividad */}
+            {/* Historial de Actividad - ACTUALIZADO CON TIMESTAMPS Y USUARIOS */}
             <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
               <h3 className="text-lg font-medium text-gray-900 mb-4">Historial de Actividad</h3>
-              <div className="space-y-3">
-                <div className="flex items-start space-x-3">
-                  <div className="w-2 h-2 bg-primary rounded-full mt-2"></div>
-                  <div>
-                    <p className="text-sm font-medium text-gray-900">Reclamo creado</p>
-                    <p className="text-xs text-gray-500">{claim.date}</p>
-                  </div>
-                </div>
-                <div className="flex items-start space-x-3">
-                  <div className="w-2 h-2 bg-yellow-400 rounded-full mt-2"></div>
-                  <div>
-                    <p className="text-sm font-medium text-gray-900">En revisión</p>
-                    <p className="text-xs text-gray-500">{claim.date}</p>
-                  </div>
-                </div>
-                {claim.status !== 'Pendiente' && (
-                  <div className="flex items-start space-x-3">
-                    <div className="w-2 h-2 bg-blue-400 rounded-full mt-2"></div>
+              <div className="space-y-4">
+                {activityLog.map((activity, index) => (
+                  <div key={index} className="flex items-start space-x-3">
+                    <div className={`w-2 h-2 rounded-full mt-2 
+                      ${activity.type === 'creation' ? 'bg-primary' : 
+                        activity.type === 'review' ? 'bg-yellow-400' : 
+                        activity.type === 'status' ? 'bg-blue-400' : 
+                        activity.type === 'document' ? 'bg-green-400' : 
+                        'bg-gray-400'}`}>
+                    </div>
                     <div>
-                      <p className="text-sm font-medium text-gray-900">Estatus: {claim.status}</p>
-                      <p className="text-xs text-gray-500">{claim.date}</p>
+                      <p className="text-sm font-medium text-gray-900">{activity.description}</p>
+                      <div className="flex items-center space-x-2">
+                        <p className="text-xs text-gray-500">{activity.timestamp}</p>
+                        <span className={`text-xs px-1.5 py-0.5 rounded-full 
+                          ${activity.user === 'admin' ? 'bg-purple-100 text-purple-800' : 
+                            'bg-blue-100 text-blue-800'}`}>
+                          {activity.user === 'admin' ? 'Admin' : 'Cliente'}
+                        </span>
+                      </div>
                     </div>
                   </div>
-                )}
+                ))}
               </div>
             </div>
-            
+
             {/* Resumen de Documentos */}
             <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
               <h3 className="text-lg font-medium text-gray-900 mb-4">Resumen de Documentos</h3>
@@ -624,6 +812,42 @@ const ClaimDetails = () => {
                   className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Rechazar
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Modal de Confirmación de Verificación */}
+        {showVerifiedModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white p-6 rounded-lg shadow-lg max-w-md w-full mx-4">
+              <div className="flex items-center space-x-2 mb-4">
+                <SafeIcon icon={FiCheck} className="w-6 h-6 text-green-500" />
+                <h3 className="text-lg font-medium text-gray-900">Confirmar Verificación</h3>
+              </div>
+              <div className="mb-6">
+                <p className="text-gray-700 mb-4">
+                  Todos los documentos han sido aprobados. ¿Deseas cambiar el estatus del reclamo a "Verificado"?
+                </p>
+                <div className="bg-green-50 p-4 rounded-md border border-green-200">
+                  <p className="text-sm text-green-800">
+                    El reclamo está listo para ser enviado a la aseguradora.
+                  </p>
+                </div>
+              </div>
+              <div className="flex justify-end space-x-3">
+                <button
+                  onClick={() => setShowVerifiedModal(false)}
+                  className="px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-colors"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={handleVerifiedConfirm}
+                  className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors"
+                >
+                  Confirmar Verificación
                 </button>
               </div>
             </div>

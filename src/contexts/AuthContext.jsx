@@ -36,6 +36,16 @@ export const AuthProvider = ({ children }) => {
         setUser(userData);
         localStorage.setItem('user', JSON.stringify(userData));
         return { success: true };
+      } else if (email === 'staff@seguro.com' && password === 'staff123') {
+        const userData = {
+          id: 5,
+          email: 'staff@seguro.com',
+          name: 'Staff Demo',
+          role: 'staff'
+        };
+        setUser(userData);
+        localStorage.setItem('user', JSON.stringify(userData));
+        return { success: true };
       } else if (email === 'cliente@email.com' && password === 'cliente123') {
         const userData = {
           id: 2,

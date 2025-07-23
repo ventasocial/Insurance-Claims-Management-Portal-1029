@@ -7,6 +7,7 @@ import ClientDashboard from './pages/ClientDashboard';
 import AdminDashboard from './pages/AdminDashboard';
 import CreateClaim from './pages/CreateClaim';
 import ClaimDetails from './pages/ClaimDetails';
+import UserManagement from './pages/UserManagement';
 
 function App() {
   return (
@@ -15,38 +16,37 @@ function App() {
         <div className="min-h-screen bg-gray-50">
           <Routes>
             <Route path="/login" element={<Login />} />
-            <Route 
-              path="/dashboard" 
-              element={
-                <ProtectedRoute>
-                  <ClientDashboard />
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/admin" 
-              element={
-                <ProtectedRoute adminOnly>
-                  <AdminDashboard />
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/crear-reclamo" 
-              element={
-                <ProtectedRoute>
-                  <CreateClaim />
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/reclamo/:id" 
-              element={
-                <ProtectedRoute>
-                  <ClaimDetails />
-                </ProtectedRoute>
-              } 
-            />
+            
+            <Route path="/dashboard" element={
+              <ProtectedRoute>
+                <ClientDashboard />
+              </ProtectedRoute>
+            } />
+            
+            <Route path="/admin" element={
+              <ProtectedRoute adminOrStaff>
+                <AdminDashboard />
+              </ProtectedRoute>
+            } />
+            
+            <Route path="/admin/usuarios" element={
+              <ProtectedRoute adminOnly>
+                <UserManagement />
+              </ProtectedRoute>
+            } />
+            
+            <Route path="/crear-reclamo" element={
+              <ProtectedRoute>
+                <CreateClaim />
+              </ProtectedRoute>
+            } />
+            
+            <Route path="/reclamo/:id" element={
+              <ProtectedRoute>
+                <ClaimDetails />
+              </ProtectedRoute>
+            } />
+            
             <Route path="/" element={<Login />} />
           </Routes>
         </div>

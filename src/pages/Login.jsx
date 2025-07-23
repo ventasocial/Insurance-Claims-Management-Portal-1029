@@ -12,13 +12,12 @@ const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  
   const { login, user } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
     if (user) {
-      if (user.role === 'admin') {
+      if (user.role === 'admin' || user.role === 'staff') {
         navigate('/admin');
       } else {
         navigate('/dashboard');
@@ -30,15 +29,12 @@ const Login = () => {
     e.preventDefault();
     setError('');
     setLoading(true);
-
     const result = await login(email, password);
-    
     if (result.success) {
       // La navegación se maneja en el useEffect
     } else {
       setError(result.error);
     }
-    
     setLoading(false);
   };
 
@@ -46,9 +42,9 @@ const Login = () => {
     <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8">
         <div className="text-center">
-          <img 
-            src="https://storage.googleapis.com/msgsndr/HWRXLf7lstECUAG07eRw/media/685d77c05c72d29e532e823f.png" 
-            alt="Logo" 
+          <img
+            src="https://storage.googleapis.com/msgsndr/HWRXLf7lstECUAG07eRw/media/685d77c05c72d29e532e823f.png"
+            alt="Logo"
             className="h-16 w-auto mx-auto mb-6"
           />
           <h2 className="text-3xl font-bold text-gray-900">
@@ -58,7 +54,7 @@ const Login = () => {
             Ingresa a tu cuenta para gestionar tus reclamos
           </p>
         </div>
-        
+
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
           <div className="space-y-4">
             <div>
@@ -81,7 +77,6 @@ const Login = () => {
                 />
               </div>
             </div>
-            
             <div>
               <label htmlFor="password" className="block text-sm font-medium text-gray-700">
                 Contraseña
@@ -105,9 +100,9 @@ const Login = () => {
                   className="absolute inset-y-0 right-0 pr-3 flex items-center"
                   onClick={() => setShowPassword(!showPassword)}
                 >
-                  <SafeIcon 
-                    icon={showPassword ? FiEyeOff : FiEye} 
-                    className="h-5 w-5 text-gray-400 hover:text-gray-600" 
+                  <SafeIcon
+                    icon={showPassword ? FiEyeOff : FiEye}
+                    className="h-5 w-5 text-gray-400 hover:text-gray-600"
                   />
                 </button>
               </div>
@@ -141,6 +136,7 @@ const Login = () => {
           <h3 className="text-sm font-medium text-blue-800 mb-2">Cuentas de prueba:</h3>
           <div className="text-xs text-blue-700 space-y-1">
             <div><strong>Admin:</strong> admin@seguro.com / admin123</div>
+            <div><strong>Staff:</strong> staff@seguro.com / staff123</div>
             <div><strong>Cliente:</strong> cliente@email.com / cliente123</div>
           </div>
         </div>

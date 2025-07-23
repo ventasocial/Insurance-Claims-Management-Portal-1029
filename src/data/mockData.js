@@ -169,5 +169,119 @@ export const mockClaims = [
         url: '#'
       }
     ]
+  },
+  {
+    id: 6,
+    customerName: 'Laura Gómez Vega',
+    customerEmail: 'laura.gomez@email.com',
+    customerWhatsApp: '+52 55 1122 3344',
+    policyNumber: 'POL-2024-006',
+    claimType: 'Reembolso',
+    claimInitialType: 'Inicial',
+    serviceType: 'Hospital',
+    status: 'Aprobado',
+    date: '2024-02-05',
+    description: 'Hospitalización por neumonía',
+    documents: [
+      {
+        name: 'factura_hospital.pdf',
+        type: 'Factura',
+        status: 'aprobado',
+        comment: '',
+        url: '#'
+      },
+      {
+        name: 'informe_medico.pdf',
+        type: 'Informe médico',
+        status: 'aprobado',
+        comment: '',
+        url: '#'
+      }
+    ]
+  },
+  {
+    id: 7,
+    customerName: 'Javier Morales Ruiz',
+    customerEmail: 'javier.morales@email.com',
+    customerWhatsApp: '+52 55 9988 7766',
+    policyNumber: 'POL-2024-007',
+    claimType: 'Programación',
+    serviceType: 'Cirugía',
+    status: 'Aprobado',
+    date: '2024-02-10',
+    description: 'Cirugía de rodilla programada',
+    documents: [
+      {
+        name: 'orden_cirugia.pdf',
+        type: 'Orden médica',
+        status: 'aprobado',
+        comment: '',
+        url: '#'
+      },
+      {
+        name: 'estudios_imagen.pdf',
+        type: 'Estudios de imagen',
+        status: 'aprobado',
+        comment: '',
+        url: '#'
+      }
+    ]
+  }
+];
+
+export const mockUsers = [
+  { 
+    id: 1, 
+    name: 'Administrador', 
+    email: 'admin@seguro.com', 
+    role: 'admin',
+    createdAt: '2023-10-15',
+    status: 'active',
+    lastLogin: '2024-06-01 09:23:45'
+  },
+  { 
+    id: 2, 
+    name: 'Cliente Demo', 
+    email: 'cliente@email.com', 
+    role: 'client',
+    createdAt: '2023-11-20',
+    status: 'active',
+    lastLogin: '2024-06-01 14:12:30'
+  },
+  { 
+    id: 3, 
+    name: 'Juan Pérez', 
+    email: 'juan.perez@email.com', 
+    role: 'client',
+    createdAt: '2024-01-10',
+    status: 'active',
+    lastLogin: '2024-05-28 11:45:22'
+  },
+  { 
+    id: 4, 
+    name: 'María López', 
+    email: 'maria.lopez@email.com', 
+    role: 'client',
+    createdAt: '2024-02-05',
+    status: 'inactive',
+    lastLogin: '2024-04-15 16:30:10'
+  },
+  { 
+    id: 5, 
+    name: 'Carlos Rodríguez', 
+    email: 'carlos.rodriguez@seguro.com', 
+    role: 'staff',
+    createdAt: '2024-03-12',
+    status: 'active',
+    lastLogin: '2024-06-01 08:15:33'
+  },
+  { 
+    id: 6, 
+    name: 'Ana Martínez', 
+    email: 'ana.martinez@seguro.com', 
+    role: 'staff',
+    createdAt: '2024-04-20',
+    status: 'active',
+    lastLogin: '2024-05-30 13:40:55'
   }
 ];

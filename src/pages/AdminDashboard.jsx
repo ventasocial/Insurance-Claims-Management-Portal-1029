@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Layout from '../components/Layout';
 import { useNavigate } from 'react-router-dom';
 import { mockClaims } from '../data/mockData';
@@ -6,7 +6,7 @@ import Filters from '../components/Filters';
 import * as FiIcons from 'react-icons/fi';
 import SafeIcon from '../common/SafeIcon';
 
-const { FiEye, FiUsers, FiFileText, FiClock, FiCheck } = FiIcons;
+const { FiEye, FiUsers, FiFileText, FiClock, FiCheck, FiThumbsUp, FiUserPlus } = FiIcons;
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
@@ -24,54 +24,70 @@ const AdminDashboard = () => {
       case 'Verificado': return 'bg-blue-100 text-blue-800';
       case 'Enviado a Aseguradora': return 'bg-purple-100 text-purple-800';
       case 'Archivado': return 'bg-gray-100 text-gray-800';
+      case 'Aprobado': return 'bg-green-100 text-green-800';
       default: return 'bg-gray-100 text-gray-800';
     }
   };
 
   const filteredClaims = mockClaims.filter(claim => {
-    const matchesKeyword = filters.keyword ? 
-      (claim.customerName.toLowerCase().includes(filters.keyword.toLowerCase()) ||
-       claim.policyNumber.toLowerCase().includes(filters.keyword.toLowerCase()) ||
-       claim.serviceType.toLowerCase().includes(filters.keyword.toLowerCase()))
+    const matchesKeyword = filters.keyword
+      ? (claim.customerName.toLowerCase().includes(filters.keyword.toLowerCase()) ||
+         claim.policyNumber.toLowerCase().includes(filters.keyword.toLowerCase()) ||
+         claim.serviceType.toLowerCase().includes(filters.keyword.toLowerCase()))
       : true;
 
-    const matchesStatus = filters.status.value ? 
-      (filters.status.include ? claim.status === filters.status.value : claim.status !== filters.status.value)
+    const matchesStatus = filters.status.value
+      ? (filters.status.include
+        ? claim.status === filters.status.value
+        : claim.status !== filters.status.value)
       : true;
 
-    const matchesType = filters.type.value ? 
-      (filters.type.include ? claim.claimType === filters.type.value : claim.claimType !== filters.type.value)
+    const matchesType = filters.type.value
+      ? (filters.type.include
+        ? claim.claimType === filters.type.value
+        : claim.claimType !== filters.type.value)
       : true;
 
     const claimDate = new Date(claim.date);
     const dateFrom = filters.dateFrom ? new Date(filters.dateFrom) : null;
     const dateTo = filters.dateTo ? new Date(filters.dateTo) : null;
-    
-    const matchesDateRange = 
+
+    const matchesDateRange =
       (!dateFrom || claimDate >= dateFrom) &&
       (!dateTo || claimDate <= dateTo);
 
     return matchesKeyword && matchesStatus && matchesType && matchesDateRange;
   });
 
+  // Calculamos las estadísticas basadas en los reclamos filtrados, no en todos los reclamos
   const stats = {
-    total: mockClaims.length,
-    pending: mockClaims.filter(c => c.status === 'Pendiente').length,
-    verified: mockClaims.filter(c => c.status === 'Verificado').length,
-    sent: mockClaims.filter(c => c.status === 'Enviado a Aseguradora').length
+    total: filteredClaims.length,
+    pending: filteredClaims.filter(c => c.status === 'Pendiente').length,
+    verified: filteredClaims.filter(c => c.status === 'Verificado').length,
+    sent: filteredClaims.filter(c => c.status === 'Enviado a Aseguradora').length,
+    approved: filteredClaims.filter(c => c.status === 'Aprobado').length,
   };
 
   return (
     <Layout title="Panel de Administración">
       <div className="space-y-6">
         {/* Header */}
-        <div>
-          <h2 className="text-2xl font-bold text-gray-900">Panel de Administración</h2>
-          <p className="text-gray-600">Gestiona todos los reclamos del sistema</p>
+        <div className="flex justify-between items-center">
+          <div>
+            <h2 className="text-2xl font-bold text-gray-900">Panel de Administración</h2>
+            <p className="text-gray-600">Gestiona todos los reclamos del sistema</p>
+          </div>
+          <button 
+            onClick={() => navigate('/admin/usuarios')}
+            className="flex items-center space-x-2 bg-primary text-white px-4 py-2 rounded-lg hover:bg-primary-dark transition-colors"
+          >
+            <SafeIcon icon={FiUserPlus} className="w-5 h-5" />
+            <span>Gestionar Usuarios</span>
+          </button>
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
           <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
             <div className="flex items-center">
               <div className="flex-shrink-0">
@@ -83,7 +99,7 @@ const AdminDashboard = () => {
               </div>
             </div>
           </div>
-
+          
           <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
             <div className="flex items-center">
               <div className="flex-shrink-0">
@@ -95,7 +111,7 @@ const AdminDashboard = () => {
               </div>
             </div>
           </div>
-
+          
           <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
             <div className="flex items-center">
               <div className="flex-shrink-0">
@@ -107,7 +123,7 @@ const AdminDashboard = () => {
               </div>
             </div>
           </div>
-
+          
           <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
             <div className="flex items-center">
               <div className="flex-shrink-0">
@@ -116,6 +132,18 @@ const AdminDashboard = () => {
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-500">Enviados</p>
                 <p className="text-2xl font-semibold text-gray-900">{stats.sent}</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+            <div className="flex items-center">
+              <div className="flex-shrink-0">
+                <SafeIcon icon={FiThumbsUp} className="h-8 w-8 text-green-500" />
+              </div>
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-500">Aprobados</p>
+                <p className="text-2xl font-semibold text-gray-900">{stats.approved}</p>
               </div>
             </div>
           </div>
