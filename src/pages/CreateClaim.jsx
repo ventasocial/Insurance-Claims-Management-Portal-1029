@@ -22,7 +22,8 @@ const CreateClaim = () => {
     previousClaimNumber: '',
     description: '',
     saveCustomerDetails: true,
-    isTitularCuentaBancaria: false
+    isTitularCuentaBancaria: false,
+    signatureType: 'electronic' // Nuevo campo para el tipo de firma (electronic o physical)
   });
 
   const [documents, setDocuments] = useState({
@@ -95,6 +96,13 @@ const CreateClaim = () => {
         serviceTypes: currentServices
       };
     });
+  };
+
+  const handleSignatureTypeChange = (type) => {
+    setFormData(prev => ({
+      ...prev,
+      signatureType: type
+    }));
   };
 
   const getServiceOptions = () => {
@@ -242,6 +250,14 @@ const CreateClaim = () => {
         formData.claimType === 'Reembolso' && formData.serviceTypes.includes('Estudios de Laboratorio e Imagenología')) {
       fields.push('Facturas de Estudios de Laboratorio e Imagenología');
       fields.push('Estudios de Laboratorio e Imagenología');
+    }
+
+    // Nueva regla: Terapia/Rehabilitación para Reembolso
+    if ((formData.insurance === 'GNP' || formData.insurance === 'AXA') && 
+        formData.claimType === 'Reembolso' && formData.serviceTypes.includes('Terapia/Rehabilitación')) {
+      fields.push('Facturas de Terapias');
+      fields.push('Recetas de Terapias');
+      fields.push('Carnet de Asistencia a Terapias');
     }
 
     return [...new Set(fields)]; // Eliminar duplicados
@@ -559,60 +575,100 @@ const CreateClaim = () => {
                 <SafeIcon icon={FiFileText} className="w-5 h-5 text-blue-600" />
                 <h3 className="text-lg font-medium text-blue-900">Sección 1: Firmas de Formas de Aseguradora</h3>
               </div>
+              
+              {/* Toggle de tipo de firma */}
+              <div className="mb-6 flex items-center justify-center bg-white p-3 rounded-lg border border-blue-100">
+                <div className="flex space-x-4">
+                  <button
+                    type="button"
+                    onClick={() => handleSignatureTypeChange('electronic')}
+                    className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                      formData.signatureType === 'electronic'
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-white text-blue-600 border border-blue-200'
+                    }`}
+                  >
+                    Firmar en Electrónico
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleSignatureTypeChange('physical')}
+                    className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                      formData.signatureType === 'physical'
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-white text-blue-600 border border-blue-200'
+                    }`}
+                  >
+                    Firmar en Físico
+                  </button>
+                </div>
+              </div>
 
-              <div className="space-y-6">
-                {section1Fields.map((field, index) => (
-                  <div key={index} className="space-y-2">
-                    <label className="block text-sm font-medium text-blue-800 mb-2">
-                      {field} *
-                    </label>
-                    <div className="border-2 border-dashed border-blue-300 rounded-lg p-4 bg-white hover:border-blue-400 transition-colors">
-                      <div className="text-center">
-                        <SafeIcon icon={FiUpload} className="w-6 h-6 text-blue-400 mx-auto mb-2" />
-                        <p className="text-sm text-blue-600 mb-2">Subir documentos (PDF, PNG, JPG)</p>
-                        <input
-                          type="file"
-                          multiple
-                          accept=".pdf,.png,.jpg,.jpeg"
-                          onChange={(e) => handleFileUpload(e, 'section1')}
-                          className="hidden"
-                          id={`section1-${index}`}
-                        />
-                        <label
-                          htmlFor={`section1-${index}`}
-                          className="inline-block bg-blue-600 text-white px-4 py-2 rounded-md text-sm cursor-pointer hover:bg-blue-700 transition-colors"
-                        >
-                          Seleccionar archivos
-                        </label>
-                        <p className="text-xs text-blue-500 mt-1">Máximo 5 archivos, 10MB cada uno</p>
-                      </div>
-                    </div>
-
-                    {documents.section1.length > 0 && (
-                      <div className="mt-3">
-                        <div className="space-y-2">
-                          {documents.section1.map((doc) => (
-                            <div key={doc.id} className="flex items-center justify-between p-2 bg-white rounded border border-blue-200">
-                              <div className="flex items-center space-x-2">
-                                <SafeIcon icon={FiCheck} className="w-4 h-4 text-green-500" />
-                                <span className="text-sm text-gray-900">{doc.name}</span>
-                                <span className="text-xs text-gray-500">({formatFileSize(doc.size)})</span>
-                              </div>
-                              <button
-                                type="button"
-                                onClick={() => removeDocument(doc.id, 'section1')}
-                                className="text-red-500 hover:text-red-700 transition-colors"
-                              >
-                                <SafeIcon icon={FiX} className="w-4 h-4" />
-                              </button>
-                            </div>
-                          ))}
+              {formData.signatureType === 'electronic' ? (
+                <div className="bg-blue-50 p-4 rounded-md border border-blue-200">
+                  <div className="flex items-center space-x-2 mb-2">
+                    <SafeIcon icon={FiMail} className="w-5 h-5 text-blue-600" />
+                    <p className="font-medium text-blue-800">Firma Electrónica</p>
+                  </div>
+                  <p className="text-blue-700">
+                    Busca en tu buzón de entrada los emails que te enviamos solicitando la firma digital de los documentos solicitados por la aseguradora.
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-6">
+                  {section1Fields.map((field, index) => (
+                    <div key={index} className="space-y-2">
+                      <label className="block text-sm font-medium text-blue-800 mb-2">
+                        {field} *
+                      </label>
+                      <div className="border-2 border-dashed border-blue-300 rounded-lg p-4 bg-white hover:border-blue-400 transition-colors">
+                        <div className="text-center">
+                          <SafeIcon icon={FiUpload} className="w-6 h-6 text-blue-400 mx-auto mb-2" />
+                          <p className="text-sm text-blue-600 mb-2">Subir documentos (PDF, PNG, JPG)</p>
+                          <input
+                            type="file"
+                            multiple
+                            accept=".pdf,.png,.jpg,.jpeg"
+                            onChange={(e) => handleFileUpload(e, 'section1')}
+                            className="hidden"
+                            id={`section1-${index}`}
+                          />
+                          <label
+                            htmlFor={`section1-${index}`}
+                            className="inline-block bg-blue-600 text-white px-4 py-2 rounded-md text-sm cursor-pointer hover:bg-blue-700 transition-colors"
+                          >
+                            Seleccionar archivos
+                          </label>
+                          <p className="text-xs text-blue-500 mt-1">Máximo 5 archivos, 10MB cada uno</p>
                         </div>
                       </div>
-                    )}
-                  </div>
-                ))}
-              </div>
+
+                      {documents.section1.length > 0 && (
+                        <div className="mt-3">
+                          <div className="space-y-2">
+                            {documents.section1.map((doc) => (
+                              <div key={doc.id} className="flex items-center justify-between p-2 bg-white rounded border border-blue-200">
+                                <div className="flex items-center space-x-2">
+                                  <SafeIcon icon={FiCheck} className="w-4 h-4 text-green-500" />
+                                  <span className="text-sm text-gray-900">{doc.name}</span>
+                                  <span className="text-xs text-gray-500">({formatFileSize(doc.size)})</span>
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={() => removeDocument(doc.id, 'section1')}
+                                  className="text-red-500 hover:text-red-700 transition-colors"
+                                >
+                                  <SafeIcon icon={FiX} className="w-4 h-4" />
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           )}
 
