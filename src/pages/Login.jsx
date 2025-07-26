@@ -132,7 +132,7 @@ const Login = () => {
             <h3 className="text-sm font-medium text-blue-800 mb-2">Cuentas de prueba:</h3>
             <div className="text-xs text-blue-700 space-y-1">
               <div><strong>Admin:</strong> admin@seguro.com / admin123</div>
-              <div><strong>Staff:</strong> staff@seguro.com / staff123</div>
+              <div><strong>Agente:</strong> staff@seguro.com / staff123</div>
               <div><strong>Cliente:</strong> cliente@email.com / cliente123</div>
             </div>
           </div>

@@ -4,7 +4,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import * as FiIcons from 'react-icons/fi';
 import SafeIcon from '../common/SafeIcon';
 
-const { FiLogOut, FiUser, FiHome, FiUsers, FiEdit, FiX, FiSave } = FiIcons;
+const { FiLogOut, FiUser, FiHome, FiUsers, FiEdit, FiX, FiSave, FiUserCheck } = FiIcons;
 
 const Layout = ({ children, title }) => {
   const { user, logout, updateUserProfile } = useAuth();
@@ -35,6 +35,14 @@ const Layout = ({ children, title }) => {
 
   const handleUsersManagement = () => {
     navigate('/admin/usuarios');
+  };
+
+  const handleAgentsManagement = () => {
+    navigate('/admin/agentes');
+  };
+
+  const handleGroupsManagement = () => {
+    navigate('/admin/grupos');
   };
 
   const openProfileModal = () => {
@@ -101,8 +109,10 @@ const Layout = ({ children, title }) => {
   // Determinar si el usuario actual es administrador
   const isAdmin = user?.role === 'admin';
   
-  // Verificar si estamos en la página de gestión de usuarios
+  // Verificar páginas actuales
   const isUsersPage = location.pathname === '/admin/usuarios';
+  const isAgentsPage = location.pathname === '/admin/agentes';
+  const isGroupsPage = location.pathname === '/admin/grupos';
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
@@ -126,15 +136,39 @@ const Layout = ({ children, title }) => {
                 <span className="hidden sm:inline">Inicio</span>
               </button>
               
-              {/* Botón de Usuarios solo para administradores y no visible en la página de usuarios */}
-              {isAdmin && !isUsersPage && (
-                <button
-                  onClick={handleUsersManagement}
-                  className="flex items-center space-x-2 text-gray-600 hover:text-primary transition-colors"
-                >
-                  <SafeIcon icon={FiUsers} className="w-5 h-5" />
-                  <span className="hidden sm:inline">Usuarios</span>
-                </button>
+              {/* Botones de navegación solo para administradores */}
+              {isAdmin && (
+                <>
+                  {!isUsersPage && (
+                    <button
+                      onClick={handleUsersManagement}
+                      className="flex items-center space-x-2 text-gray-600 hover:text-primary transition-colors"
+                    >
+                      <SafeIcon icon={FiUsers} className="w-5 h-5" />
+                      <span className="hidden sm:inline">Usuarios</span>
+                    </button>
+                  )}
+                  
+                  {!isAgentsPage && (
+                    <button
+                      onClick={handleAgentsManagement}
+                      className="flex items-center space-x-2 text-gray-600 hover:text-primary transition-colors"
+                    >
+                      <SafeIcon icon={FiUserCheck} className="w-5 h-5" />
+                      <span className="hidden sm:inline">Agentes</span>
+                    </button>
+                  )}
+                  
+                  {!isGroupsPage && (
+                    <button
+                      onClick={handleGroupsManagement}
+                      className="flex items-center space-x-2 text-gray-600 hover:text-primary transition-colors"
+                    >
+                      <SafeIcon icon={FiUsers} className="w-5 h-5" />
+                      <span className="hidden sm:inline">Grupos</span>
+                    </button>
+                  )}
+                </>
               )}
               
               <button
@@ -147,7 +181,7 @@ const Layout = ({ children, title }) => {
                   {user?.role === 'admin' 
                     ? 'Admin' 
                     : user?.role === 'staff'
-                      ? 'Staff'
+                      ? 'Agente'
                       : 'Cliente'}
                 </span>
               </button>

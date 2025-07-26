@@ -44,8 +44,8 @@ export const AuthProvider = ({ children }) => {
         const userData = {
           id: 5,
           email: 'staff@seguro.com',
-          name: 'Staff Demo',
-          firstName: 'Staff',
+          name: 'Agente Demo',
+          firstName: 'Agente',
           paternalLastName: 'Demo',
           maternalLastName: '',
           whatsapp: '+52 55 8765 4321',

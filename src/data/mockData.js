@@ -6,11 +6,13 @@ export const mockClaims = [
     customerWhatsApp: '+52 55 1234 5678',
     policyNumber: 'POL-2024-001',
     claimType: 'Reembolso',
-    claimInitialType: 'Inicial', // Nuevo campo
+    claimInitialType: 'Inicial',
     serviceType: 'Cirugía',
     status: 'Pendiente',
     date: '2024-01-15',
     description: 'Cirugía de apendicitis realizada en Hospital General',
+    groupId: 1,
+    assignedAgentId: 5,
     documents: [
       {
         name: 'factura_hospital.pdf',
@@ -46,6 +48,8 @@ export const mockClaims = [
     status: 'Verificado',
     date: '2024-01-10',
     description: 'Consulta especializada en cardiología',
+    groupId: 2,
+    assignedAgentId: 6,
     documents: [
       {
         name: 'orden_medica.pdf',
@@ -74,6 +78,8 @@ export const mockClaims = [
     status: 'Enviado a Aseguradora',
     date: '2024-01-08',
     description: 'Exámenes prenatales de rutina',
+    groupId: 1,
+    assignedAgentId: 5,
     documents: [
       {
         name: 'resultados_laboratorio.pdf',
@@ -105,11 +111,13 @@ export const mockClaims = [
     customerWhatsApp: '+52 55 7777 8888',
     policyNumber: 'POL-2024-004',
     claimType: 'Reembolso',
-    claimInitialType: 'Complemento', // Nuevo campo
+    claimInitialType: 'Complemento',
     serviceType: 'Medicamentos',
     status: 'Aprobado',
     date: '2024-01-05',
     description: 'Medicamentos para tratamiento de diabetes',
+    groupId: 3,
+    assignedAgentId: 7,
     documents: [
       {
         name: 'receta_medica.pdf',
@@ -141,11 +149,13 @@ export const mockClaims = [
     customerWhatsApp: '+52 55 3333 4444',
     policyNumber: 'POL-2024-005',
     claimType: 'Reembolso',
-    claimInitialType: 'Inicial', // Nuevo campo
+    claimInitialType: 'Inicial',
     serviceType: 'Terapias',
     status: 'Rechazado',
     date: '2024-01-12',
     description: 'Sesiones de fisioterapia por lesión deportiva',
+    groupId: 2,
+    assignedAgentId: 6,
     documents: [
       {
         name: 'orden_fisioterapia.pdf',
@@ -182,6 +192,8 @@ export const mockClaims = [
     status: 'Aprobado',
     date: '2024-02-05',
     description: 'Hospitalización por neumonía',
+    groupId: 1,
+    assignedAgentId: 5,
     documents: [
       {
         name: 'factura_hospital.pdf',
@@ -210,6 +222,8 @@ export const mockClaims = [
     status: 'Aprobado',
     date: '2024-02-10',
     description: 'Cirugía de rodilla programada',
+    groupId: 3,
+    assignedAgentId: 7,
     documents: [
       {
         name: 'orden_cirugia.pdf',
@@ -230,58 +244,169 @@ export const mockClaims = [
 ];
 
 export const mockUsers = [
-  { 
-    id: 1, 
-    name: 'Administrador', 
-    email: 'admin@seguro.com', 
+  {
+    id: 1,
+    name: 'Administrador',
+    email: 'admin@seguro.com',
     role: 'admin',
     createdAt: '2023-10-15',
     status: 'active',
-    lastLogin: '2024-06-01 09:23:45'
+    lastLogin: '2024-06-01 09:23:45',
+    groupId: null
   },
-  { 
-    id: 2, 
-    name: 'Cliente Demo', 
-    email: 'cliente@email.com', 
+  {
+    id: 2,
+    name: 'Cliente Demo',
+    email: 'cliente@email.com',
     role: 'client',
     createdAt: '2023-11-20',
     status: 'active',
-    lastLogin: '2024-06-01 14:12:30'
+    lastLogin: '2024-06-01 14:12:30',
+    groupId: 1
   },
-  { 
-    id: 3, 
-    name: 'Juan Pérez', 
-    email: 'juan.perez@email.com', 
+  {
+    id: 3,
+    name: 'Juan Pérez',
+    email: 'juan.perez@email.com',
     role: 'client',
     createdAt: '2024-01-10',
     status: 'active',
-    lastLogin: '2024-05-28 11:45:22'
+    lastLogin: '2024-05-28 11:45:22',
+    groupId: 1
   },
-  { 
-    id: 4, 
-    name: 'María López', 
-    email: 'maria.lopez@email.com', 
+  {
+    id: 4,
+    name: 'María López',
+    email: 'maria.lopez@email.com',
     role: 'client',
     createdAt: '2024-02-05',
     status: 'inactive',
-    lastLogin: '2024-04-15 16:30:10'
+    lastLogin: '2024-04-15 16:30:10',
+    groupId: 2
   },
-  { 
-    id: 5, 
-    name: 'Carlos Rodríguez', 
-    email: 'carlos.rodriguez@seguro.com', 
+  {
+    id: 5,
+    name: 'Carlos Rodríguez',
+    email: 'carlos.rodriguez@seguro.com',
     role: 'staff',
     createdAt: '2024-03-12',
     status: 'active',
-    lastLogin: '2024-06-01 08:15:33'
+    lastLogin: '2024-06-01 08:15:33',
+    groupId: null,
+    assignedGroups: [1, 2] // Grupos asignados al agente
   },
-  { 
-    id: 6, 
-    name: 'Ana Martínez', 
-    email: 'ana.martinez@seguro.com', 
+  {
+    id: 6,
+    name: 'Ana Martínez',
+    email: 'ana.martinez@seguro.com',
     role: 'staff',
     createdAt: '2024-04-20',
     status: 'active',
-    lastLogin: '2024-05-30 13:40:55'
+    lastLogin: '2024-05-30 13:40:55',
+    groupId: null,
+    assignedGroups: [2, 3]
+  },
+  {
+    id: 7,
+    name: 'Luis García',
+    email: 'luis.garcia@seguro.com',
+    role: 'staff',
+    createdAt: '2024-05-15',
+    status: 'active',
+    lastLogin: '2024-05-31 16:22:10',
+    groupId: null,
+    assignedGroups: [1, 3]
+  },
+  {
+    id: 8,
+    name: 'Patricia Jiménez',
+    email: 'patricia.jimenez@email.com',
+    role: 'client',
+    createdAt: '2024-03-08',
+    status: 'active',
+    lastLogin: '2024-05-29 10:15:33',
+    groupId: 3
+  },
+  {
+    id: 9,
+    name: 'Roberto Silva',
+    email: 'roberto.silva@email.com',
+    role: 'client',
+    createdAt: '2024-04-12',
+    status: 'active',
+    lastLogin: '2024-05-28 14:45:20',
+    groupId: 1
+  },
+  {
+    id: 10,
+    name: 'Carmen Vega',
+    email: 'carmen.vega@email.com',
+    role: 'client',
+    createdAt: '2024-05-01',
+    status: 'inactive',
+    lastLogin: '2024-05-20 08:30:15',
+    groupId: 2
   }
+];
+
+// Nuevos datos para grupos de clientes
+export const mockClientGroups = [
+  {
+    id: 1,
+    name: 'Corporativo Premium',
+    avatar: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=100&h=100&fit=crop&crop=face',
+    representativeName: 'Roberto Mendoza',
+    representativePhone: '+52 55 1234 5678',
+    representativeEmail: 'roberto.mendoza@corporativo.com',
+    createdAt: '2024-01-15',
+    clientsCount: 4,
+    agentsCount: 2,
+    status: 'active'
+  },
+  {
+    id: 2,
+    name: 'PYME Seguros',
+    avatar: 'https://images.unsplash.com/photo-1551836022-d5d88e9218df?w=100&h=100&fit=crop&crop=face',
+    representativeName: 'Ana Fernández',
+    representativePhone: '+52 55 9876 5432',
+    representativeEmail: 'ana.fernandez@pymeseguros.com',
+    createdAt: '2024-02-01',
+    clientsCount: 3,
+    agentsCount: 2,
+    status: 'active'
+  },
+  {
+    id: 3,
+    name: 'Salud Integral',
+    avatar: 'https://images.unsplash.com/photo-1582750433449-648ed127bb54?w=100&h=100&fit=crop&crop=face',
+    representativeName: 'Dr. Miguel Torres',
+    representativePhone: '+52 55 5555 7777',
+    representativeEmail: 'miguel.torres@saludintegral.com',
+    createdAt: '2024-03-10',
+    clientsCount: 2,
+    agentsCount: 2,
+    status: 'active'
+  },
+  {
+    id: 4,
+    name: 'Empresarial Plus',
+    avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop&crop=face',
+    representativeName: 'Carlos Ramírez',
+    representativePhone: '+52 55 3333 9999',
+    representativeEmail: 'carlos.ramirez@empresarialplus.com',
+    createdAt: '2024-04-05',
+    clientsCount: 0,
+    agentsCount: 1,
+    status: 'inactive'
+  }
+];
+
+// Relaciones agente-grupo para gestión de asignaciones
+export const mockAgentGroupAssignments = [
+  { agentId: 5, groupId: 1, assignedAt: '2024-01-20' },
+  { agentId: 5, groupId: 2, assignedAt: '2024-02-15' },
+  { agentId: 6, groupId: 2, assignedAt: '2024-02-01' },
+  { agentId: 6, groupId: 3, assignedAt: '2024-03-15' },
+  { agentId: 7, groupId: 1, assignedAt: '2024-03-01' },
+  { agentId: 7, groupId: 3, assignedAt: '2024-03-20' }
 ];

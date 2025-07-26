@@ -1,79 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import Layout from '../components/Layout';
 import { useNavigate } from 'react-router-dom';
+import { mockUsers, mockClientGroups } from '../data/mockData';
 import * as FiIcons from 'react-icons/fi';
 import SafeIcon from '../common/SafeIcon';
 
-const { 
-  FiUsers, FiUserPlus, FiEdit, FiTrash2, FiSearch, 
-  FiX, FiCheck, FiArrowLeft, FiUserX, FiFilter, FiUser
-} = FiIcons;
-
-// Datos de ejemplo para la gestión de usuarios
-const mockUsers = [
-  { 
-    id: 1, 
-    name: 'Administrador', 
-    email: 'admin@seguro.com', 
-    role: 'admin',
-    createdAt: '2023-10-15',
-    status: 'active',
-    lastLogin: '2024-06-01 09:23:45'
-  },
-  { 
-    id: 2, 
-    name: 'Cliente Demo', 
-    email: 'cliente@email.com', 
-    role: 'client',
-    createdAt: '2023-11-20',
-    status: 'active',
-    lastLogin: '2024-06-01 14:12:30'
-  },
-  { 
-    id: 3, 
-    name: 'Juan Pérez', 
-    email: 'juan.perez@email.com', 
-    role: 'client',
-    createdAt: '2024-01-10',
-    status: 'active',
-    lastLogin: '2024-05-28 11:45:22'
-  },
-  { 
-    id: 4, 
-    name: 'María López', 
-    email: 'maria.lopez@email.com', 
-    role: 'client',
-    createdAt: '2024-02-05',
-    status: 'inactive',
-    lastLogin: '2024-04-15 16:30:10'
-  },
-  { 
-    id: 5, 
-    name: 'Carlos Rodríguez', 
-    email: 'carlos.rodriguez@seguro.com', 
-    role: 'staff',
-    createdAt: '2024-03-12',
-    status: 'active',
-    lastLogin: '2024-06-01 08:15:33'
-  },
-  { 
-    id: 6, 
-    name: 'Ana Martínez', 
-    email: 'ana.martinez@seguro.com', 
-    role: 'staff',
-    createdAt: '2024-04-20',
-    status: 'active',
-    lastLogin: '2024-05-30 13:40:55'
-  }
-];
+const { FiUsers, FiUserPlus, FiEdit, FiTrash2, FiSearch, FiX, FiCheck, FiArrowLeft, FiUserX, FiFilter, FiUser } = FiIcons;
 
 const UserManagement = () => {
   const navigate = useNavigate();
   const [users, setUsers] = useState(mockUsers);
+  const [groups, setGroups] = useState(mockClientGroups);
   const [filteredUsers, setFilteredUsers] = useState(mockUsers);
   const [searchTerm, setSearchTerm] = useState('');
   const [roleFilter, setRoleFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
+  const [groupFilter, setGroupFilter] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
@@ -81,34 +23,45 @@ const UserManagement = () => {
     name: '',
     email: '',
     role: 'client',
-    status: 'active'
+    status: 'active',
+    groupId: ''
   });
   const [formErrors, setFormErrors] = useState({});
 
   // Filtrar usuarios
   useEffect(() => {
     let result = users;
-    
+
     // Filtrar por término de búsqueda
     if (searchTerm) {
       result = result.filter(
-        user => user.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                user.email.toLowerCase().includes(searchTerm.toLowerCase())
+        user =>
+          user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          user.email.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
-    
+
     // Filtrar por rol
     if (roleFilter) {
       result = result.filter(user => user.role === roleFilter);
     }
-    
+
     // Filtrar por estado
     if (statusFilter) {
       result = result.filter(user => user.status === statusFilter);
     }
-    
+
+    // Filtrar por grupo
+    if (groupFilter) {
+      if (groupFilter === 'no-group') {
+        result = result.filter(user => !user.groupId);
+      } else {
+        result = result.filter(user => user.groupId === parseInt(groupFilter));
+      }
+    }
+
     setFilteredUsers(result);
-  }, [users, searchTerm, roleFilter, statusFilter]);
+  }, [users, searchTerm, roleFilter, statusFilter, groupFilter]);
 
   const handleAddUser = () => {
     setCurrentUser(null);
@@ -116,7 +69,8 @@ const UserManagement = () => {
       name: '',
       email: '',
       role: 'client',
-      status: 'active'
+      status: 'active',
+      groupId: ''
     });
     setFormErrors({});
     setShowModal(true);
@@ -128,7 +82,8 @@ const UserManagement = () => {
       name: user.name,
       email: user.email,
       role: user.role,
-      status: user.status
+      status: user.status,
+      groupId: user.groupId || ''
     });
     setFormErrors({});
     setShowModal(true);
@@ -141,11 +96,11 @@ const UserManagement = () => {
 
   const validateForm = () => {
     const errors = {};
-    
+
     if (!newUser.name.trim()) {
       errors.name = "El nombre es requerido";
     }
-    
+
     if (!newUser.email.trim()) {
       errors.email = "El email es requerido";
     } else if (!/\S+@\S+\.\S+/.test(newUser.email)) {
@@ -153,18 +108,23 @@ const UserManagement = () => {
     } else if (!currentUser && users.some(user => user.email === newUser.email)) {
       errors.email = "Este email ya está registrado";
     }
-    
+
     setFormErrors(errors);
     return Object.keys(errors).length === 0;
   };
 
   const handleSubmit = () => {
     if (!validateForm()) return;
-    
+
+    const userData = {
+      ...newUser,
+      groupId: newUser.groupId ? parseInt(newUser.groupId) : null
+    };
+
     if (currentUser) {
       // Actualizar usuario existente
-      const updatedUsers = users.map(user => 
-        user.id === currentUser.id ? { ...user, ...newUser } : user
+      const updatedUsers = users.map(user =>
+        user.id === currentUser.id ? { ...user, ...userData } : user
       );
       setUsers(updatedUsers);
     } else {
@@ -173,19 +133,19 @@ const UserManagement = () => {
       const today = new Date().toISOString().split('T')[0];
       const newUserComplete = {
         id: newUserId,
-        ...newUser,
+        ...userData,
         createdAt: today,
         lastLogin: 'Nunca'
       };
       setUsers([...users, newUserComplete]);
     }
-    
+
     setShowModal(false);
   };
 
   const confirmDelete = () => {
     if (!currentUser) return;
-    
+
     const updatedUsers = users.filter(user => user.id !== currentUser.id);
     setUsers(updatedUsers);
     setShowDeleteModal(false);
@@ -193,13 +153,17 @@ const UserManagement = () => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setNewUser(prev => ({ ...prev, [name]: value }));
+    setNewUser(prev => ({
+      ...prev,
+      [name]: value
+    }));
   };
 
   const resetFilters = () => {
     setSearchTerm('');
     setRoleFilter('');
     setStatusFilter('');
+    setGroupFilter('');
   };
 
   const getRoleBadge = (role) => {
@@ -207,7 +171,7 @@ const UserManagement = () => {
       case 'admin':
         return <span className="px-2 py-1 text-xs font-medium rounded-full bg-purple-100 text-purple-800">Admin</span>;
       case 'staff':
-        return <span className="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">Staff</span>;
+        return <span className="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">Agente</span>;
       case 'client':
         return <span className="px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800">Cliente</span>;
       default:
@@ -224,6 +188,12 @@ const UserManagement = () => {
       default:
         return <span className="px-2 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-800">{status}</span>;
     }
+  };
+
+  const getGroupName = (groupId) => {
+    if (!groupId) return 'Sin grupo';
+    const group = groups.find(g => g.id === groupId);
+    return group ? group.name : 'Grupo eliminado';
   };
 
   return (
@@ -296,7 +266,7 @@ const UserManagement = () => {
                 )}
               </div>
             </div>
-            
+
             {/* Filtro por Rol */}
             <div className="w-full md:w-48">
               <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -309,11 +279,11 @@ const UserManagement = () => {
               >
                 <option value="">Todos los roles</option>
                 <option value="admin">Administrador</option>
-                <option value="staff">Staff</option>
+                <option value="staff">Agente</option>
                 <option value="client">Cliente</option>
               </select>
             </div>
-            
+
             {/* Filtro por Estado */}
             <div className="w-full md:w-48">
               <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -329,6 +299,24 @@ const UserManagement = () => {
                 <option value="inactive">Inactivo</option>
               </select>
             </div>
+
+            {/* Filtro por Grupo */}
+            <div className="w-full md:w-48">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Grupo
+              </label>
+              <select
+                value={groupFilter}
+                onChange={(e) => setGroupFilter(e.target.value)}
+                className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary text-sm"
+              >
+                <option value="">Todos los grupos</option>
+                <option value="no-group">Sin grupo</option>
+                {groups.map(group => (
+                  <option key={group.id} value={group.id}>{group.name}</option>
+                ))}
+              </select>
+            </div>
           </div>
         </div>
 
@@ -339,7 +327,7 @@ const UserManagement = () => {
               Usuarios ({filteredUsers.length})
             </h3>
           </div>
-
+          
           {filteredUsers.length === 0 ? (
             <div className="p-12 text-center">
               <SafeIcon icon={FiUserX} className="w-12 h-12 text-gray-400 mx-auto mb-4" />
@@ -359,6 +347,9 @@ const UserManagement = () => {
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Estado
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Grupo
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Fecha Creación
@@ -392,6 +383,9 @@ const UserManagement = () => {
                         {getStatusBadge(user.status)}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {getGroupName(user.groupId)}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         {user.createdAt}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
@@ -420,145 +414,172 @@ const UserManagement = () => {
             </div>
           )}
         </div>
+
+        {/* Modal para Agregar/Editar Usuario */}
+        {showModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-md mx-4">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-medium text-gray-900">
+                  {currentUser ? 'Editar Usuario' : 'Nuevo Usuario'}
+                </h3>
+                <button
+                  onClick={() => setShowModal(false)}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <SafeIcon icon={FiX} className="w-5 h-5" />
+                </button>
+              </div>
+              
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Nombre completo
+                  </label>
+                  <input
+                    type="text"
+                    name="name"
+                    value={newUser.name}
+                    onChange={handleChange}
+                    className={`w-full border ${formErrors.name ? 'border-red-300' : 'border-gray-300'} rounded-md px-3 py-2 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary`}
+                    placeholder="Nombre completo"
+                  />
+                  {formErrors.name && (
+                    <p className="mt-1 text-xs text-red-500">{formErrors.name}</p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Correo electrónico
+                  </label>
+                  <input
+                    type="email"
+                    name="email"
+                    value={newUser.email}
+                    onChange={handleChange}
+                    className={`w-full border ${formErrors.email ? 'border-red-300' : 'border-gray-300'} rounded-md px-3 py-2 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary`}
+                    placeholder="correo@ejemplo.com"
+                  />
+                  {formErrors.email && (
+                    <p className="mt-1 text-xs text-red-500">{formErrors.email}</p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Rol
+                  </label>
+                  <select
+                    name="role"
+                    value={newUser.role}
+                    onChange={handleChange}
+                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary"
+                  >
+                    <option value="client">Cliente</option>
+                    <option value="staff">Agente</option>
+                    <option value="admin">Administrador</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Grupo
+                  </label>
+                  <select
+                    name="groupId"
+                    value={newUser.groupId}
+                    onChange={handleChange}
+                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary"
+                  >
+                    <option value="">Sin grupo</option>
+                    {groups.map(group => (
+                      <option key={group.id} value={group.id}>{group.name}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Estado
+                  </label>
+                  <select
+                    name="status"
+                    value={newUser.status}
+                    onChange={handleChange}
+                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary"
+                  >
+                    <option value="active">Activo</option>
+                    <option value="inactive">Inactivo</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="mt-6 flex justify-end space-x-3">
+                <button
+                  onClick={() => setShowModal(false)}
+                  className="px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-colors"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={handleSubmit}
+                  className="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary-dark transition-colors"
+                >
+                  {currentUser ? 'Guardar Cambios' : 'Crear Usuario'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Modal de Confirmación de Eliminación */}
+        {showDeleteModal && currentUser && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white p-6 rounded-lg shadow-lg max-w-md w-full mx-4">
+              <div className="flex items-center space-x-2 mb-4">
+                <SafeIcon icon={FiTrash2} className="w-6 h-6 text-red-500" />
+                <h3 className="text-lg font-medium text-gray-900">Confirmar Eliminación</h3>
+              </div>
+              
+              <div className="mb-6">
+                <p className="text-gray-700 mb-4">
+                  ¿Estás seguro de que deseas eliminar este usuario? Esta acción no se puede deshacer.
+                </p>
+                <div className="bg-gray-50 p-4 rounded-md">
+                  <p className="text-sm text-gray-600">
+                    <span className="font-medium">Nombre:</span> {currentUser.name}
+                  </p>
+                  <p className="text-sm text-gray-600">
+                    <span className="font-medium">Email:</span> {currentUser.email}
+                  </p>
+                  <p className="text-sm text-gray-600">
+                    <span className="font-medium">Rol:</span> {currentUser.role}
+                  </p>
+                  <p className="text-sm text-gray-600">
+                    <span className="font-medium">Grupo:</span> {getGroupName(currentUser.groupId)}
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex justify-end space-x-3">
+                <button
+                  onClick={() => setShowDeleteModal(false)}
+                  className="px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-colors"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={confirmDelete}
+                  className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors"
+                >
+                  Eliminar Usuario
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
-
-      {/* Modal para Agregar/Editar Usuario */}
-      {showModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-md mx-4">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-medium text-gray-900">
-                {currentUser ? 'Editar Usuario' : 'Nuevo Usuario'}
-              </h3>
-              <button
-                onClick={() => setShowModal(false)}
-                className="text-gray-400 hover:text-gray-600"
-              >
-                <SafeIcon icon={FiX} className="w-5 h-5" />
-              </button>
-            </div>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Nombre completo
-                </label>
-                <input
-                  type="text"
-                  name="name"
-                  value={newUser.name}
-                  onChange={handleChange}
-                  className={`w-full border ${formErrors.name ? 'border-red-300' : 'border-gray-300'} rounded-md px-3 py-2 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary`}
-                  placeholder="Nombre completo"
-                />
-                {formErrors.name && (
-                  <p className="mt-1 text-xs text-red-500">{formErrors.name}</p>
-                )}
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Correo electrónico
-                </label>
-                <input
-                  type="email"
-                  name="email"
-                  value={newUser.email}
-                  onChange={handleChange}
-                  className={`w-full border ${formErrors.email ? 'border-red-300' : 'border-gray-300'} rounded-md px-3 py-2 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary`}
-                  placeholder="correo@ejemplo.com"
-                />
-                {formErrors.email && (
-                  <p className="mt-1 text-xs text-red-500">{formErrors.email}</p>
-                )}
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Rol
-                </label>
-                <select
-                  name="role"
-                  value={newUser.role}
-                  onChange={handleChange}
-                  className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary"
-                >
-                  <option value="client">Cliente</option>
-                  <option value="staff">Staff</option>
-                  <option value="admin">Administrador</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Estado
-                </label>
-                <select
-                  name="status"
-                  value={newUser.status}
-                  onChange={handleChange}
-                  className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary"
-                >
-                  <option value="active">Activo</option>
-                  <option value="inactive">Inactivo</option>
-                </select>
-              </div>
-            </div>
-            <div className="mt-6 flex justify-end space-x-3">
-              <button
-                onClick={() => setShowModal(false)}
-                className="px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-colors"
-              >
-                Cancelar
-              </button>
-              <button
-                onClick={handleSubmit}
-                className="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary-dark transition-colors"
-              >
-                {currentUser ? 'Guardar Cambios' : 'Crear Usuario'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Modal de Confirmación de Eliminación */}
-      {showDeleteModal && currentUser && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded-lg shadow-lg max-w-md w-full mx-4">
-            <div className="flex items-center space-x-2 mb-4">
-              <SafeIcon icon={FiTrash2} className="w-6 h-6 text-red-500" />
-              <h3 className="text-lg font-medium text-gray-900">Confirmar Eliminación</h3>
-            </div>
-            <div className="mb-6">
-              <p className="text-gray-700 mb-4">
-                ¿Estás seguro de que deseas eliminar este usuario? Esta acción no se puede deshacer.
-              </p>
-              <div className="bg-gray-50 p-4 rounded-md">
-                <p className="text-sm text-gray-600">
-                  <span className="font-medium">Nombre:</span> {currentUser.name}
-                </p>
-                <p className="text-sm text-gray-600">
-                  <span className="font-medium">Email:</span> {currentUser.email}
-                </p>
-                <p className="text-sm text-gray-600">
-                  <span className="font-medium">Rol:</span> {currentUser.role}
-                </p>
-              </div>
-            </div>
-            <div className="flex justify-end space-x-3">
-              <button
-                onClick={() => setShowDeleteModal(false)}
-                className="px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-colors"
-              >
-                Cancelar
-              </button>
-              <button
-                onClick={confirmDelete}
-                className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors"
-              >
-                Eliminar Usuario
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </Layout>
   );
 };
