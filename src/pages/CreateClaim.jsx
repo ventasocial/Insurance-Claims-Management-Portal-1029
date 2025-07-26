@@ -5,8 +5,9 @@ import { useAuth } from '../contexts/AuthContext';
 import * as FiIcons from 'react-icons/fi';
 import SafeIcon from '../common/SafeIcon';
 import ContactSelector from '../components/ContactSelector';
+import DocumentPreview from '../components/DocumentPreview';
 
-const { FiUser, FiMail, FiPhone, FiFileText, FiUpload, FiX, FiAlertCircle, FiCheck, FiUsers, FiUserPlus, FiCreditCard } = FiIcons;
+const { FiUser, FiMail, FiPhone, FiFileText, FiUpload, FiX, FiAlertCircle, FiCheck, FiUsers, FiCreditCard, FiEye } = FiIcons;
 
 const CreateClaim = () => {
   const navigate = useNavigate();
@@ -46,6 +47,13 @@ const CreateClaim = () => {
       accountHolder: false
     },
     
+    // Flags para "Yo soy..." 
+    isCurrentUser: {
+      affected: false,
+      policyholder: false,
+      accountHolder: false
+    },
+    
     // Guardar contactos
     saveContacts: true
   });
@@ -60,6 +68,13 @@ const CreateClaim = () => {
   const [whatsappError, setWhatsappError] = useState('');
   const [showContactSelector, setShowContactSelector] = useState(false);
   const [currentContactRole, setCurrentContactRole] = useState(null);
+  const [showPreview, setShowPreview] = useState(false);
+  const [previewDocument, setPreviewDocument] = useState(null);
+  const [avatarFiles, setAvatarFiles] = useState({
+    affected: null,
+    policyholder: null,
+    accountHolder: null
+  });
 
   // Pre-cargar datos si viene de complemento
   useEffect(() => {
@@ -91,8 +106,48 @@ const CreateClaim = () => {
     }
   }, [complementData]);
 
+  // Generar iniciales para el avatar
+  const getInitials = (name) => {
+    if (!name) return '';
+    const nameParts = name.trim().split(/\s+/);
+    if (nameParts.length >= 2) {
+      return (nameParts[0][0] + nameParts[1][0]).toUpperCase();
+    } else if (nameParts.length === 1) {
+      return nameParts[0].substring(0, 2).toUpperCase();
+    }
+    return '';
+  };
+
+  // Generar color de fondo para avatar basado en el nombre
+  const getAvatarColor = (name) => {
+    if (!name) return '#CCCCCC';
+    const colors = [
+      '#F87171', // Rojo
+      '#FB923C', // Naranja
+      '#FBBF24', // Amarillo
+      '#34D399', // Verde
+      '#60A5FA', // Azul
+      '#A78BFA', // Púrpura
+      '#F472B6', // Rosa
+    ];
+    
+    let hash = 0;
+    for (let i = 0; i < name.length; i++) {
+      hash = name.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    
+    const index = Math.abs(hash) % colors.length;
+    return colors[index];
+  };
+
   const handleInputChange = (e) => {
     const { name, value } = e.target;
+    
+    // No permitir cambios en insurance y previousClaimNumber si es un complemento
+    if (complementData && (name === 'insurance' || name === 'previousClaimNumber')) {
+      return;
+    }
+    
     if (name === 'customerWhatsApp') {
       if (value && !value.startsWith('+')) {
         setWhatsappError('El número debe incluir el código de país (ej. +52)');
@@ -159,10 +214,46 @@ const CreateClaim = () => {
         newContacts[role] = { name: '', email: '', whatsapp: '', avatar: '' };
       }
       
+      // Resetear también el flag de "Yo soy"
+      const newIsCurrentUser = { ...prev.isCurrentUser, [role]: false };
+      
       return {
         ...prev,
         isSameAsAffected: newIsSameAsAffected,
-        contacts: newContacts
+        contacts: newContacts,
+        isCurrentUser: newIsCurrentUser
+      };
+    });
+  };
+
+  const handleCurrentUserChange = (role) => {
+    setFormData(prev => {
+      const newIsCurrentUser = {
+        ...prev.isCurrentUser,
+        [role]: !prev.isCurrentUser[role]
+      };
+      
+      const newContacts = { ...prev.contacts };
+      const newIsSameAsAffected = { ...prev.isSameAsAffected, [role]: false };
+      
+      if (newIsCurrentUser[role]) {
+        // Si se marca como el usuario actual, copiar datos del usuario
+        newContacts[role] = {
+          name: user.name,
+          email: user.email,
+          whatsapp: user.whatsapp || '',
+          avatar: user.avatar || ''
+        };
+      } else {
+        // Si se desmarca, limpiar los datos
+        newContacts[role] = { name: '', email: '', whatsapp: '', avatar: '' };
+      }
+      
+      return {
+        ...prev,
+        isCurrentUser: newIsCurrentUser,
+        contacts: newContacts,
+        isSameAsAffected: newIsSameAsAffected
       };
     });
   };
@@ -192,20 +283,24 @@ const CreateClaim = () => {
     switch (formData.claimType) {
       case 'Reembolso':
         return [
-          'Hospital',
-          'Honorarios Médicos',
-          'Estudios de Laboratorio e Imagenología',
-          'Medicamentos',
-          'Terapia/Rehabilitación'
+          { emoji: '🏥', name: 'Hospital' },
+          { emoji: '👨‍⚕️', name: 'Honorarios Médicos' },
+          { emoji: '🔬', name: 'Estudios de Laboratorio e Imagenología' },
+          { emoji: '💊', name: 'Medicamentos' },
+          { emoji: '🧠', name: 'Terapia/Rehabilitación' }
         ];
       case 'Programación':
-        return ['Medicamentos', 'Terapia/Rehabilitación', 'Cirugía'];
+        return [
+          { emoji: '💊', name: 'Medicamentos' },
+          { emoji: '🧠', name: 'Terapia/Rehabilitación' },
+          { emoji: '🔪', name: 'Cirugía' }
+        ];
       default:
         return [];
     }
   };
 
-  const handleFileUpload = (e, section) => {
+  const handleFileUpload = (e, section, fieldName) => {
     const files = Array.from(e.target.files);
     const allowedTypes = ['application/pdf', 'image/png', 'image/jpeg', 'image/jpg'];
     const maxFileSize = 10 * 1024 * 1024; // 10MB
@@ -228,13 +323,18 @@ const CreateClaim = () => {
       validFiles.splice(maxFiles);
     }
     
-    const newDocuments = validFiles.map(file => ({
-      id: Date.now() + Math.random(),
-      name: file.name,
-      size: file.size,
-      type: file.type,
-      file: file
-    }));
+    const newDocuments = validFiles.map(file => {
+      const url = URL.createObjectURL(file);
+      return {
+        id: Date.now() + Math.random(),
+        name: file.name,
+        size: file.size,
+        type: file.type,
+        file: file,
+        url: url,
+        fieldName: fieldName // Guardamos a qué campo pertenece este documento
+      };
+    });
 
     setDocuments(prev => ({
       ...prev,
@@ -242,11 +342,60 @@ const CreateClaim = () => {
     }));
   };
 
-  const removeDocument = (id, section) => {
-    setDocuments(prev => ({
+  const handleAvatarUpload = (e, role) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const allowedTypes = ['image/png', 'image/jpeg', 'image/jpg'];
+    const maxFileSize = 2 * 1024 * 1024; // 2MB
+    
+    if (!allowedTypes.includes(file.type)) {
+      alert('Solo se permiten imágenes PNG y JPG.');
+      return;
+    }
+    
+    if (file.size > maxFileSize) {
+      alert('La imagen es muy grande. Máximo 2MB.');
+      return;
+    }
+    
+    const url = URL.createObjectURL(file);
+    
+    setFormData(prev => ({
       ...prev,
-      [section]: prev[section].filter(doc => doc.id !== id)
+      contacts: {
+        ...prev.contacts,
+        [role]: {
+          ...prev.contacts[role],
+          avatar: url
+        }
+      }
     }));
+    
+    setAvatarFiles(prev => ({
+      ...prev,
+      [role]: file
+    }));
+  };
+
+  const removeDocument = (id, section) => {
+    setDocuments(prev => {
+      const updatedSection = prev[section].filter(doc => doc.id !== id);
+      // Revocar URL para evitar fugas de memoria
+      const removedDoc = prev[section].find(doc => doc.id === id);
+      if (removedDoc && removedDoc.url) {
+        URL.revokeObjectURL(removedDoc.url);
+      }
+      return {
+        ...prev,
+        [section]: updatedSection
+      };
+    });
+  };
+
+  const openDocumentPreview = (doc) => {
+    setPreviewDocument(doc);
+    setShowPreview(true);
   };
 
   const formatFileSize = (bytes) => {
@@ -392,6 +541,10 @@ const CreateClaim = () => {
       isSameAsAffected: {
         ...prev.isSameAsAffected,
         [currentContactRole]: false // Desactivar el checkbox de "mismo que afectado"
+      },
+      isCurrentUser: {
+        ...prev.isCurrentUser,
+        [currentContactRole]: false // Desactivar el checkbox de "yo soy"
       }
     }));
     setShowContactSelector(false);
@@ -415,7 +568,7 @@ const CreateClaim = () => {
     }
     
     // Validar campos requeridos del formulario
-    if (!formData.policyNumber || !formData.insurance || !formData.claimType) {
+    if (!formData.policyNumber || !formData.insurance || !formData.claimType || !formData.description) {
       alert('Debe completar todos los campos obligatorios');
       return false;
     }
@@ -461,6 +614,11 @@ const CreateClaim = () => {
     }
   };
 
+  // Obtener documentos agrupados por campo
+  const getDocumentsByField = (section, fieldName) => {
+    return documents[section].filter(doc => doc.fieldName === fieldName);
+  };
+
   const section1Fields = getSection1Fields();
   const section3Fields = getSection3Fields();
   const showSection2ForReembolso = (formData.insurance === 'GNP' || formData.insurance === 'AXA') && formData.claimType === 'Reembolso';
@@ -499,6 +657,8 @@ const CreateClaim = () => {
 
     // Para los roles que no son el afectado, mostrar opción de "mismo que afectado"
     const showSameAsAffectedOption = role !== 'affected' && formData.contacts.affected;
+    const initials = getInitials(contact.name);
+    const avatarColor = getAvatarColor(contact.name);
 
     return (
       <div className={`p-6 rounded-lg shadow-sm mb-6 ${bgColorClass}`}>
@@ -511,8 +671,24 @@ const CreateClaim = () => {
             </h3>
           </div>
           
-          {/* Botón para seleccionar contacto guardado */}
+          {/* Botones para selección rápida */}
           <div className="flex items-center space-x-2">
+            {/* Checkbox "Yo soy el ..." */}
+            <div className="flex items-center mr-4">
+              <input
+                type="checkbox"
+                id={`currentUser-${role}`}
+                checked={formData.isCurrentUser[role]}
+                onChange={() => handleCurrentUserChange(role)}
+                className="h-4 w-4 text-primary border-gray-300 rounded focus:ring-primary mr-2"
+                disabled={disabled || formData.isSameAsAffected[role]}
+              />
+              <label htmlFor={`currentUser-${role}`} className="text-sm text-gray-700">
+                Yo soy el {roleLabel}
+              </label>
+            </div>
+            
+            {/* Opción "Mismo que afectado" para roles que no sean el afectado */}
             {showSameAsAffectedOption && (
               <div className="flex items-center mr-4">
                 <input
@@ -521,7 +697,7 @@ const CreateClaim = () => {
                   checked={formData.isSameAsAffected[role]}
                   onChange={() => handleSameAsAffectedChange(role)}
                   className="h-4 w-4 text-primary border-gray-300 rounded focus:ring-primary mr-2"
-                  disabled={disabled}
+                  disabled={disabled || formData.isCurrentUser[role]}
                 />
                 <label htmlFor={`sameAs-${role}`} className="text-sm text-gray-700">
                   Mismo que Asegurado Afectado
@@ -529,12 +705,13 @@ const CreateClaim = () => {
               </div>
             )}
             
+            {/* Botón para seleccionar contacto guardado */}
             <button 
               type="button"
               onClick={() => openContactSelector(role)}
-              disabled={disabled || formData.isSameAsAffected[role]}
+              disabled={disabled || formData.isSameAsAffected[role] || formData.isCurrentUser[role]}
               className={`flex items-center space-x-2 px-3 py-2 text-sm ${
-                disabled || formData.isSameAsAffected[role]
+                disabled || formData.isSameAsAffected[role] || formData.isCurrentUser[role]
                   ? 'text-gray-400 bg-gray-100 cursor-not-allowed'
                   : 'text-gray-600 hover:text-gray-800 hover:bg-gray-50 border border-gray-300'
               } rounded-md transition-colors`}
@@ -545,125 +722,204 @@ const CreateClaim = () => {
           </div>
         </div>
         
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Nombre completo {isRequired && '*'}
-            </label>
-            <input
-              type="text"
-              name={`${role}-name`}
-              required={isRequired}
-              value={contact.name || ''}
-              onChange={(e) => handleContactChange(role, 'name', e.target.value)}
-              disabled={disabled || formData.isSameAsAffected[role]}
-              className={`w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary ${
-                disabled || formData.isSameAsAffected[role] ? 'bg-gray-50' : ''
-              }`}
-              placeholder="Nombre completo"
-            />
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {/* Avatar - Primera columna */}
+          <div className="flex flex-col items-center justify-start">
+            <div className="mb-3">
+              {contact.avatar ? (
+                <img 
+                  src={contact.avatar} 
+                  alt={contact.name || roleLabel} 
+                  className="w-28 h-28 rounded-full object-cover border-2 border-gray-300"
+                />
+              ) : (
+                <div 
+                  className="w-28 h-28 rounded-full flex items-center justify-center text-white text-2xl font-bold"
+                  style={{ backgroundColor: avatarColor }}
+                >
+                  {initials}
+                </div>
+              )}
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2 text-center">
+                Foto / Avatar
+              </label>
+              <input
+                type="file"
+                accept="image/png,image/jpeg,image/jpg"
+                onChange={(e) => handleAvatarUpload(e, role)}
+                disabled={disabled || formData.isSameAsAffected[role] || formData.isCurrentUser[role]}
+                className="hidden"
+                id={`avatar-upload-${role}`}
+              />
+              <label
+                htmlFor={`avatar-upload-${role}`}
+                className={`inline-block px-4 py-2 text-sm rounded-md text-center w-full ${
+                  disabled || formData.isSameAsAffected[role] || formData.isCurrentUser[role]
+                    ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
+                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300 cursor-pointer'
+                }`}
+              >
+                <SafeIcon icon={FiUpload} className="w-4 h-4 inline mr-1" />
+                Subir imagen
+              </label>
+            </div>
           </div>
           
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Correo electrónico {isRequired && '*'}
-            </label>
-            <input
-              type="email"
-              name={`${role}-email`}
-              required={isRequired}
-              value={contact.email || ''}
-              onChange={(e) => handleContactChange(role, 'email', e.target.value)}
-              disabled={disabled || formData.isSameAsAffected[role]}
-              className={`w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary ${
-                disabled || formData.isSameAsAffected[role] ? 'bg-gray-50' : ''
-              }`}
-              placeholder="correo@ejemplo.com"
-            />
-          </div>
-          
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              WhatsApp {isRequired && '*'}
-            </label>
-            <input
-              type="tel"
-              name={`${role}-whatsapp`}
-              required={isRequired}
-              value={contact.whatsapp || ''}
-              onChange={(e) => handleContactChange(role, 'whatsapp', e.target.value)}
-              disabled={disabled || formData.isSameAsAffected[role]}
-              className={`w-full border ${
-                whatsappError && !formData.isSameAsAffected[role] ? 'border-red-300' : 'border-gray-300'
-              } rounded-md px-3 py-2 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary ${
-                disabled || formData.isSameAsAffected[role] ? 'bg-gray-50' : ''
-              }`}
-              placeholder="+52 55 1234 5678"
-            />
-            {whatsappError && !formData.isSameAsAffected[role] && (
-              <p className="text-red-500 text-xs mt-1">{whatsappError}</p>
-            )}
-          </div>
-          
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Avatar URL
-            </label>
-            <input
-              type="url"
-              name={`${role}-avatar`}
-              value={contact.avatar || ''}
-              onChange={(e) => handleContactChange(role, 'avatar', e.target.value)}
-              disabled={disabled || formData.isSameAsAffected[role]}
-              className={`w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary ${
-                disabled || formData.isSameAsAffected[role] ? 'bg-gray-50' : ''
-              }`}
-              placeholder="https://ejemplo.com/avatar.jpg"
-            />
+          {/* Campos de datos - Segunda y tercera columna */}
+          <div className="col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Nombre completo {isRequired && '*'}
+              </label>
+              <input
+                type="text"
+                name={`${role}-name`}
+                required={isRequired}
+                value={contact.name || ''}
+                onChange={(e) => handleContactChange(role, 'name', e.target.value)}
+                disabled={disabled || formData.isSameAsAffected[role] || formData.isCurrentUser[role]}
+                className={`w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary ${
+                  disabled || formData.isSameAsAffected[role] || formData.isCurrentUser[role] ? 'bg-gray-50' : ''
+                }`}
+                placeholder="Nombre completo"
+              />
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Correo electrónico {isRequired && '*'}
+              </label>
+              <input
+                type="email"
+                name={`${role}-email`}
+                required={isRequired}
+                value={contact.email || ''}
+                onChange={(e) => handleContactChange(role, 'email', e.target.value)}
+                disabled={disabled || formData.isSameAsAffected[role] || formData.isCurrentUser[role]}
+                className={`w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary ${
+                  disabled || formData.isSameAsAffected[role] || formData.isCurrentUser[role] ? 'bg-gray-50' : ''
+                }`}
+                placeholder="correo@ejemplo.com"
+              />
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                WhatsApp {isRequired && '*'}
+              </label>
+              <input
+                type="tel"
+                name={`${role}-whatsapp`}
+                required={isRequired}
+                value={contact.whatsapp || ''}
+                onChange={(e) => handleContactChange(role, 'whatsapp', e.target.value)}
+                disabled={disabled || formData.isSameAsAffected[role] || formData.isCurrentUser[role]}
+                className={`w-full border ${
+                  whatsappError && !formData.isSameAsAffected[role] && !formData.isCurrentUser[role] ? 'border-red-300' : 'border-gray-300'
+                } rounded-md px-3 py-2 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary ${
+                  disabled || formData.isSameAsAffected[role] || formData.isCurrentUser[role] ? 'bg-gray-50' : ''
+                }`}
+                placeholder="+52 55 1234 5678"
+              />
+              {whatsappError && !formData.isSameAsAffected[role] && !formData.isCurrentUser[role] && (
+                <p className="text-red-500 text-xs mt-1">{whatsappError}</p>
+              )}
+            </div>
           </div>
         </div>
       </div>
     );
   };
 
-  // Mostrar información del gestor actual
-  const renderCurrentManager = () => {
-    const manager = formData.contacts.manager || {};
-
+  // Renderizar un campo de documento con su sección de archivos cargados
+  const renderDocumentField = (fieldName, section, isOptional = false) => {
+    const fieldDocuments = getDocumentsByField(section, fieldName) || [];
+    
     return (
-      <div className="bg-amber-50 border-l-4 border-amber-500 p-6 rounded-lg shadow-sm mb-6">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center space-x-2">
-            <SafeIcon icon={FiUserPlus} className="w-5 h-5 text-amber-600" />
-            <h3 className="text-lg font-medium text-gray-900">
-              Contacto o Gestor (Usuario actual)
-            </h3>
-          </div>
-        </div>
-        
-        <div className="flex items-center space-x-4">
-          <div className="flex-shrink-0">
-            {manager.avatar ? (
-              <img 
-                src={manager.avatar} 
-                alt={manager.name} 
-                className="h-12 w-12 rounded-full object-cover"
-              />
-            ) : (
-              <div className="h-12 w-12 flex items-center justify-center bg-amber-100 rounded-full">
-                <SafeIcon icon={FiUserPlus} className="h-6 w-6 text-amber-500" />
+      <div key={fieldName} className="space-y-2 mb-6">
+        <div className="flex flex-col md:flex-row gap-6">
+          {/* Columna izquierda: Campo de carga */}
+          <div className="md:w-1/2">
+            <label className="block text-sm font-medium text-blue-800 mb-2">
+              {fieldName} {!isOptional && '*'}
+            </label>
+            <div className="border-2 border-dashed border-blue-300 rounded-lg p-4 bg-white hover:border-blue-400 transition-colors">
+              <div className="text-center">
+                <SafeIcon icon={FiUpload} className="w-6 h-6 text-blue-400 mx-auto mb-2" />
+                <p className="text-sm text-blue-600 mb-2">Subir documentos (PDF, PNG, JPG)</p>
+                <input
+                  type="file"
+                  multiple
+                  accept=".pdf,.png,.jpg,.jpeg"
+                  onChange={(e) => handleFileUpload(e, section, fieldName)}
+                  className="hidden"
+                  id={`${section}-${fieldName.replace(/\s+/g, '-').toLowerCase()}`}
+                />
+                <label
+                  htmlFor={`${section}-${fieldName.replace(/\s+/g, '-').toLowerCase()}`}
+                  className="inline-block bg-blue-600 text-white px-4 py-2 rounded-md text-sm cursor-pointer hover:bg-blue-700 transition-colors"
+                >
+                  Seleccionar archivos
+                </label>
+                <p className="text-xs text-blue-500 mt-1">Máximo 5 archivos, 10MB cada uno</p>
               </div>
-            )}
+            </div>
           </div>
-          <div className="flex-1">
-            <p className="font-medium text-gray-900">{manager.name}</p>
-            <p className="text-sm text-gray-600">{manager.email}</p>
-            {manager.whatsapp && (
-              <p className="text-sm text-gray-600">{manager.whatsapp}</p>
-            )}
-          </div>
-          <div className="bg-amber-100 text-amber-800 text-xs px-2 py-1 rounded-full">
-            Usuario actual
+          
+          {/* Columna derecha: Archivos cargados */}
+          <div className="md:w-1/2">
+            <div className="h-full">
+              <div className="flex items-center justify-between mb-2">
+                <h4 className="text-sm font-medium text-gray-700">Archivos cargados</h4>
+                <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full">
+                  {fieldDocuments.length} / 5
+                </span>
+              </div>
+              
+              {fieldDocuments.length === 0 ? (
+                <div className="h-[120px] border border-gray-200 rounded-lg flex items-center justify-center bg-gray-50">
+                  <p className="text-sm text-gray-500">No hay archivos cargados</p>
+                </div>
+              ) : (
+                <div className="space-y-2 max-h-[200px] overflow-y-auto border border-gray-200 rounded-lg p-2">
+                  {fieldDocuments.map((doc) => (
+                    <div 
+                      key={doc.id} 
+                      className="flex items-center justify-between p-2 bg-white border border-gray-100 rounded hover:bg-gray-50"
+                    >
+                      <div className="flex items-center space-x-2 truncate flex-1">
+                        <SafeIcon icon={FiFileText} className="w-4 h-4 text-blue-500 flex-shrink-0" />
+                        <span className="text-sm text-gray-900 truncate" title={doc.name}>
+                          {doc.name}
+                        </span>
+                      </div>
+                      <div className="flex items-center space-x-1">
+                        <span className="text-xs text-gray-500 mr-2">{formatFileSize(doc.size)}</span>
+                        <button
+                          type="button"
+                          onClick={() => openDocumentPreview(doc)}
+                          className="p-1 text-primary hover:text-primary-dark"
+                          title="Vista previa"
+                        >
+                          <SafeIcon icon={FiEye} className="w-4 h-4" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => removeDocument(doc.id, section)}
+                          className="p-1 text-red-500 hover:text-red-700"
+                          title="Eliminar"
+                        >
+                          <SafeIcon icon={FiX} className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>
@@ -672,7 +928,7 @@ const CreateClaim = () => {
 
   return (
     <Layout title="Crear Nuevo Reclamo">
-      <div className="max-w-4xl mx-auto">
+      <div className="max-w-5xl mx-auto">
         <div className="mb-6">
           <h2 className="text-2xl font-bold text-gray-900">
             {complementData ? 'Crear Reclamo Complemento' : 'Crear Nuevo Reclamo'}
@@ -685,19 +941,7 @@ const CreateClaim = () => {
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-8">
-          {/* Información del Asegurado Afectado - Siempre requerido */}
-          {renderContactForm('affected', true, !!complementData)}
-
-          {/* Información del Asegurado Titular */}
-          {renderContactForm('policyholder', true, !!complementData)}
-
-          {/* Información del Titular de la Cuenta Bancaria - Solo para Reembolso */}
-          {formData.claimType === 'Reembolso' && renderContactForm('accountHolder', true, false)}
-
-          {/* Información del Contacto o Gestor (Usuario actual) */}
-          {renderCurrentManager()}
-
-          {/* Información del Reclamo */}
+          {/* Información del Reclamo - Movido al inicio y siempre visible */}
           <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
             <div className="flex items-center space-x-2 mb-6">
               <SafeIcon icon={FiFileText} className="w-5 h-5 text-primary" />
@@ -800,8 +1044,9 @@ const CreateClaim = () => {
                     required
                     value={formData.previousClaimNumber}
                     onChange={handleInputChange}
-                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary"
+                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary bg-gray-50"
                     placeholder="Número provisto por la Aseguradora"
+                    readOnly={!!complementData}
                   />
                 </div>
               )}
@@ -813,16 +1058,16 @@ const CreateClaim = () => {
                   </label>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     {getServiceOptions().map((service) => (
-                      <div key={service} className="flex items-center">
+                      <div key={service.name} className="flex items-center">
                         <input
                           type="checkbox"
-                          id={`service-${service}`}
-                          checked={formData.serviceTypes.includes(service)}
-                          onChange={() => handleServiceTypeChange(service)}
+                          id={`service-${service.name}`}
+                          checked={formData.serviceTypes.includes(service.name)}
+                          onChange={() => handleServiceTypeChange(service.name)}
                           className="h-4 w-4 text-primary border-gray-300 rounded focus:ring-primary"
                         />
-                        <label htmlFor={`service-${service}`} className="ml-2 text-sm text-gray-700">
-                          {service}
+                        <label htmlFor={`service-${service.name}`} className="ml-2 text-sm text-gray-700">
+                          <span className="mr-2 text-lg">{service.emoji}</span> {service.name}
                         </label>
                       </div>
                     ))}
@@ -854,7 +1099,7 @@ const CreateClaim = () => {
 
               <div className="mt-6">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Descripción del Siniestro
+                  Descripción del Siniestro *
                 </label>
                 <textarea
                   name="description"
@@ -863,8 +1108,35 @@ const CreateClaim = () => {
                   rows={4}
                   className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary"
                   placeholder="Describe brevemente cómo ocurrió el siniestro"
+                  required
                 />
               </div>
+            </div>
+          </div>
+
+          {/* Información del Asegurado Afectado - Siempre requerido */}
+          {renderContactForm('affected', true, !!complementData)}
+
+          {/* Información del Asegurado Titular */}
+          {renderContactForm('policyholder', true, !!complementData)}
+
+          {/* Información del Titular de la Cuenta Bancaria - Solo para Reembolso */}
+          {formData.claimType === 'Reembolso' && renderContactForm('accountHolder', true, false)}
+
+          {/* Opción de guardar contactos - Movido justo después de los contactos */}
+          <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+            <div className="flex items-center">
+              <input
+                type="checkbox"
+                id="saveContacts"
+                name="saveContacts"
+                checked={formData.saveContacts}
+                onChange={(e) => setFormData(prev => ({ ...prev, saveContacts: e.target.checked }))}
+                className="h-4 w-4 text-primary border-gray-300 rounded focus:ring-primary"
+              />
+              <label htmlFor="saveContacts" className="ml-2 text-sm text-gray-700">
+                Guardar los detalles de los contactos para futuros reclamos
+              </label>
             </div>
           </div>
 
@@ -917,57 +1189,7 @@ const CreateClaim = () => {
                 </div>
               ) : (
                 <div className="space-y-6">
-                  {section1Fields.map((field, index) => (
-                    <div key={index} className="space-y-2">
-                      <label className="block text-sm font-medium text-blue-800 mb-2">{field} *</label>
-                      <div className="border-2 border-dashed border-blue-300 rounded-lg p-4 bg-white hover:border-blue-400 transition-colors">
-                        <div className="text-center">
-                          <SafeIcon icon={FiUpload} className="w-6 h-6 text-blue-400 mx-auto mb-2" />
-                          <p className="text-sm text-blue-600 mb-2">Subir documentos (PDF, PNG, JPG)</p>
-                          <input
-                            type="file"
-                            multiple
-                            accept=".pdf,.png,.jpg,.jpeg"
-                            onChange={(e) => handleFileUpload(e, 'section1')}
-                            className="hidden"
-                            id={`section1-${index}`}
-                          />
-                          <label
-                            htmlFor={`section1-${index}`}
-                            className="inline-block bg-blue-600 text-white px-4 py-2 rounded-md text-sm cursor-pointer hover:bg-blue-700 transition-colors"
-                          >
-                            Seleccionar archivos
-                          </label>
-                          <p className="text-xs text-blue-500 mt-1">Máximo 5 archivos, 10MB cada uno</p>
-                        </div>
-                      </div>
-                      {documents.section1.length > 0 && (
-                        <div className="mt-3">
-                          <div className="space-y-2">
-                            {documents.section1.map((doc) => (
-                              <div
-                                key={doc.id}
-                                className="flex items-center justify-between p-2 bg-white rounded border border-blue-200"
-                              >
-                                <div className="flex items-center space-x-2">
-                                  <SafeIcon icon={FiCheck} className="w-4 h-4 text-green-500" />
-                                  <span className="text-sm text-gray-900">{doc.name}</span>
-                                  <span className="text-xs text-gray-500">({formatFileSize(doc.size)})</span>
-                                </div>
-                                <button
-                                  type="button"
-                                  onClick={() => removeDocument(doc.id, 'section1')}
-                                  className="text-red-500 hover:text-red-700 transition-colors"
-                                >
-                                  <SafeIcon icon={FiX} className="w-4 h-4" />
-                                </button>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  ))}
+                  {section1Fields.map((field) => renderDocumentField(field, 'section1'))}
                 </div>
               )}
             </div>
@@ -983,147 +1205,17 @@ const CreateClaim = () => {
               
               <div className="space-y-6">
                 {/* Informe Médico */}
-                <div className="space-y-2">
-                  <label className="block text-sm font-medium text-green-800 mb-2">Informe Médico *</label>
-                  <div className="border-2 border-dashed border-green-300 rounded-lg p-4 bg-white hover:border-green-400 transition-colors">
-                    <div className="text-center">
-                      <SafeIcon icon={FiUpload} className="w-6 h-6 text-green-400 mx-auto mb-2" />
-                      <p className="text-sm text-green-600 mb-2">Subir documentos (PDF, PNG, JPG)</p>
-                      <input
-                        type="file"
-                        multiple
-                        accept=".pdf,.png,.jpg,.jpeg"
-                        onChange={(e) => handleFileUpload(e, 'section2')}
-                        className="hidden"
-                        id="informe-medico"
-                      />
-                      <label
-                        htmlFor="informe-medico"
-                        className="inline-block bg-green-600 text-white px-4 py-2 rounded-md text-sm cursor-pointer hover:bg-green-700 transition-colors"
-                      >
-                        Seleccionar archivos
-                      </label>
-                      <p className="text-xs text-green-500 mt-1">Máximo 5 archivos, 10MB cada uno</p>
-                    </div>
-                  </div>
-                </div>
-
+                {renderDocumentField('Informe Médico', 'section2')}
+                
                 {/* Identificación Oficial del Asegurado Afectado */}
-                <div className="space-y-2">
-                  <label className="block text-sm font-medium text-green-800 mb-2">
-                    Identificación Oficial del Asegurado Afectado *
-                  </label>
-                  <div className="border-2 border-dashed border-green-300 rounded-lg p-4 bg-white hover:border-green-400 transition-colors">
-                    <div className="text-center">
-                      <SafeIcon icon={FiUpload} className="w-6 h-6 text-green-400 mx-auto mb-2" />
-                      <p className="text-sm text-green-600 mb-2">Subir documentos (PDF, PNG, JPG)</p>
-                      <input
-                        type="file"
-                        multiple
-                        accept=".pdf,.png,.jpg,.jpeg"
-                        onChange={(e) => handleFileUpload(e, 'section2')}
-                        className="hidden"
-                        id="id-asegurado"
-                      />
-                      <label
-                        htmlFor="id-asegurado"
-                        className="inline-block bg-green-600 text-white px-4 py-2 rounded-md text-sm cursor-pointer hover:bg-green-700 transition-colors"
-                      >
-                        Seleccionar archivos
-                      </label>
-                      <p className="text-xs text-green-500 mt-1">Máximo 5 archivos, 10MB cada uno</p>
-                    </div>
-                  </div>
-                </div>
-
+                {renderDocumentField('Identificación Oficial del Asegurado Afectado', 'section2')}
+                
                 {/* Carátula del Estado de Cuenta Bancaria - Solo para Reembolso */}
-                {formData.claimType === 'Reembolso' && (
-                  <div className="space-y-2">
-                    <label className="block text-sm font-medium text-green-800 mb-2">
-                      Carátula del Estado de Cuenta Bancaria *
-                    </label>
-                    <div className="border-2 border-dashed border-green-300 rounded-lg p-4 bg-white hover:border-green-400 transition-colors">
-                      <div className="text-center">
-                        <SafeIcon icon={FiUpload} className="w-6 h-6 text-green-400 mx-auto mb-2" />
-                        <p className="text-sm text-green-600 mb-2">Subir documentos (PDF, PNG, JPG)</p>
-                        <input
-                          type="file"
-                          multiple
-                          accept=".pdf,.png,.jpg,.jpeg"
-                          onChange={(e) => handleFileUpload(e, 'section2')}
-                          className="hidden"
-                          id="estado-cuenta"
-                        />
-                        <label
-                          htmlFor="estado-cuenta"
-                          className="inline-block bg-green-600 text-white px-4 py-2 rounded-md text-sm cursor-pointer hover:bg-green-700 transition-colors"
-                        >
-                          Seleccionar archivos
-                        </label>
-                        <p className="text-xs text-green-500 mt-1">Máximo 5 archivos, 10MB cada uno</p>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
+                {formData.claimType === 'Reembolso' && renderDocumentField('Carátula del Estado de Cuenta Bancaria', 'section2')}
+                
                 {/* Identificación del Titular de Cuenta Bancaria (condicional) - Solo para Reembolso */}
-                {formData.claimType === 'Reembolso' && !formData.isSameAsAffected.accountHolder && (
-                  <div className="space-y-2">
-                    <label className="block text-sm font-medium text-green-800 mb-2">
-                      Identificación Oficial del Titular de la Cuenta Bancaria *
-                    </label>
-                    <div className="border-2 border-dashed border-green-300 rounded-lg p-4 bg-white hover:border-green-400 transition-colors">
-                      <div className="text-center">
-                        <SafeIcon icon={FiUpload} className="w-6 h-6 text-green-400 mx-auto mb-2" />
-                        <p className="text-sm text-green-600 mb-2">Subir documentos (PDF, PNG, JPG)</p>
-                        <input
-                          type="file"
-                          multiple
-                          accept=".pdf,.png,.jpg,.jpeg"
-                          onChange={(e) => handleFileUpload(e, 'section2')}
-                          className="hidden"
-                          id="id-titular-bancario"
-                        />
-                        <label
-                          htmlFor="id-titular-bancario"
-                          className="inline-block bg-green-600 text-white px-4 py-2 rounded-md text-sm cursor-pointer hover:bg-green-700 transition-colors"
-                        >
-                          Seleccionar archivos
-                        </label>
-                        <p className="text-xs text-green-500 mt-1">Máximo 5 archivos, 10MB cada uno</p>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {documents.section2.length > 0 && (
-                  <div className="mt-4">
-                    <h4 className="text-sm font-medium text-green-800 mb-3">
-                      Archivos de Sección 2 ({documents.section2.length})
-                    </h4>
-                    <div className="space-y-2">
-                      {documents.section2.map((doc) => (
-                        <div
-                          key={doc.id}
-                          className="flex items-center justify-between p-2 bg-white rounded border border-green-200"
-                        >
-                          <div className="flex items-center space-x-2">
-                            <SafeIcon icon={FiCheck} className="w-4 h-4 text-green-500" />
-                            <span className="text-sm text-gray-900">{doc.name}</span>
-                            <span className="text-xs text-gray-500">({formatFileSize(doc.size)})</span>
-                          </div>
-                          <button
-                            type="button"
-                            onClick={() => removeDocument(doc.id, 'section2')}
-                            className="text-red-500 hover:text-red-700 transition-colors"
-                          >
-                            <SafeIcon icon={FiX} className="w-4 h-4" />
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
+                {formData.claimType === 'Reembolso' && !formData.isSameAsAffected.accountHolder && 
+                  renderDocumentField('Identificación Oficial del Titular de la Cuenta Bancaria', 'section2')}
               </div>
             </div>
           )}
@@ -1139,84 +1231,12 @@ const CreateClaim = () => {
               </div>
               
               <div className="space-y-6">
-                {section3Fields.map((field, index) => (
-                  <div key={index} className="space-y-2">
-                    <label className="block text-sm font-medium text-orange-800 mb-2">
-                      {field} {field.includes('(opcional)') ? '' : '*'}
-                    </label>
-                    <div className="border-2 border-dashed border-orange-300 rounded-lg p-4 bg-white hover:border-orange-400 transition-colors">
-                      <div className="text-center">
-                        <SafeIcon icon={FiUpload} className="w-6 h-6 text-orange-400 mx-auto mb-2" />
-                        <p className="text-sm text-orange-600 mb-2">Subir documentos (PDF, PNG, JPG)</p>
-                        <input
-                          type="file"
-                          multiple
-                          accept=".pdf,.png,.jpg,.jpeg"
-                          onChange={(e) => handleFileUpload(e, 'section3')}
-                          className="hidden"
-                          id={`section3-${index}`}
-                          required={!field.includes('(opcional)')}
-                        />
-                        <label
-                          htmlFor={`section3-${index}`}
-                          className="inline-block bg-orange-600 text-white px-4 py-2 rounded-md text-sm cursor-pointer hover:bg-orange-700 transition-colors"
-                        >
-                          Seleccionar archivos
-                        </label>
-                        <p className="text-xs text-orange-500 mt-1">Máximo 5 archivos, 10MB cada uno</p>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-
-                {documents.section3.length > 0 && (
-                  <div className="mt-4">
-                    <h4 className="text-sm font-medium text-orange-800 mb-3">
-                      Archivos de Sección 3 ({documents.section3.length})
-                    </h4>
-                    <div className="space-y-2">
-                      {documents.section3.map((doc) => (
-                        <div
-                          key={doc.id}
-                          className="flex items-center justify-between p-2 bg-white rounded border border-orange-200"
-                        >
-                          <div className="flex items-center space-x-2">
-                            <SafeIcon icon={FiCheck} className="w-4 h-4 text-green-500" />
-                            <span className="text-sm text-gray-900">{doc.name}</span>
-                            <span className="text-xs text-gray-500">({formatFileSize(doc.size)})</span>
-                          </div>
-                          <button
-                            type="button"
-                            onClick={() => removeDocument(doc.id, 'section3')}
-                            className="text-red-500 hover:text-red-700 transition-colors"
-                          >
-                            <SafeIcon icon={FiX} className="w-4 h-4" />
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
+                {section3Fields.map((field) => 
+                  renderDocumentField(field, 'section3', field.includes('(opcional)'))
                 )}
               </div>
             </div>
           )}
-
-          {/* Opción de guardar contactos */}
-          <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-            <div className="flex items-center">
-              <input
-                type="checkbox"
-                id="saveContacts"
-                name="saveContacts"
-                checked={formData.saveContacts}
-                onChange={(e) => setFormData(prev => ({ ...prev, saveContacts: e.target.checked }))}
-                className="h-4 w-4 text-primary border-gray-300 rounded focus:ring-primary"
-              />
-              <label htmlFor="saveContacts" className="ml-2 text-sm text-gray-700">
-                Guardar los detalles de los contactos para futuros reclamos
-              </label>
-            </div>
-          </div>
 
           {/* Botones */}
           <div className="flex flex-col sm:flex-row justify-end space-y-3 sm:space-y-0 sm:space-x-4">
@@ -1245,6 +1265,14 @@ const CreateClaim = () => {
           onClose={() => setShowContactSelector(false)}
           role={contactRoleLabels[currentContactRole]}
           userId={user?.id} // Pasamos el ID del usuario actual para filtrar solo sus contactos
+        />
+      )}
+      
+      {/* Modal de previsualización de documentos */}
+      {showPreview && previewDocument && (
+        <DocumentPreview 
+          document={previewDocument}
+          onClose={() => setShowPreview(false)}
         />
       )}
     </Layout>
