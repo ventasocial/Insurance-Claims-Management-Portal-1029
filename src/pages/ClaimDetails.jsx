@@ -6,7 +6,7 @@ import { mockClaims } from '../data/mockData';
 import * as FiIcons from 'react-icons/fi';
 import SafeIcon from '../common/SafeIcon';
 
-const { FiArrowLeft, FiUser, FiMail, FiPhone, FiFileText, FiDownload, FiCheck, FiX, FiMessageSquare, FiUpload, FiAlertCircle, FiClock, FiEdit, FiUserCheck, FiUserPlus, FiSave, FiUsers, FiCreditCard, FiEye } = FiIcons;
+const { FiArrowLeft, FiUser, FiMail, FiPhone, FiFileText, FiDownload, FiCheck, FiX, FiMessageSquare, FiUpload, FiAlertCircle, FiClock, FiEdit, FiUserCheck, FiUserPlus, FiSave, FiUsers, FiCreditCard, FiEye, FiShield, FiCalendar, FiTag, FiMapPin, FiClipboard, FiInfo, FiBuilding } = FiIcons;
 
 const ClaimDetails = () => {
   const { id } = useParams();
@@ -24,7 +24,7 @@ const ClaimDetails = () => {
   const [isEditingClaimNumber, setIsEditingClaimNumber] = useState(false);
   const [activityLog, setActivityLog] = useState([]);
   const [claimData, setClaimData] = useState(null);
-  const [activeTab, setActiveTab] = useState('affected'); // Para controlar el tab activo
+  const [activeTab, setActiveTab] = useState('affected');
 
   // Generamos un código de reclamo único de 4 caracteres alfanuméricos
   const generateClaimCode = () => {
@@ -39,10 +39,10 @@ const ClaimDetails = () => {
   // Encontrar el reclamo por ID
   const claim = mockClaims.find(c => c.id === parseInt(id));
 
-  // Crear la estructura de documentos con estados y comentarios
+  // Crear la estructura de documentos con estados, comentarios e historial
   useEffect(() => {
     if (claim) {
-      // Inicializar documentos con categorías
+      // Inicializar documentos con categorías e historial de comentarios
       const docStructure = {
         'Documentos de Aseguradora': [
           {
@@ -51,7 +51,17 @@ const ClaimDetails = () => {
             type: 'Forma de Aseguradora',
             status: 'recibido',
             comment: '',
-            url: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf'
+            url: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
+            commentHistory: [
+              {
+                id: 1,
+                comment: 'Documento recibido correctamente',
+                status: 'recibido',
+                timestamp: '2024-01-16T10:30:00',
+                userName: 'Carlos Rodríguez',
+                userAvatar: "https://images.unsplash.com/photo-1560250097-0b93528c311a?w=100&h=100&fit=crop&crop=face"
+              }
+            ]
           },
           {
             id: 'doc-2',
@@ -59,7 +69,25 @@ const ClaimDetails = () => {
             type: 'Forma de Aseguradora',
             status: 'aprobado',
             comment: 'Documento correcto y completo',
-            url: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf'
+            url: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
+            commentHistory: [
+              {
+                id: 1,
+                comment: 'Documento recibido para revisión',
+                status: 'recibido',
+                timestamp: '2024-01-16T11:00:00',
+                userName: 'Carlos Rodríguez',
+                userAvatar: "https://images.unsplash.com/photo-1560250097-0b93528c311a?w=100&h=100&fit=crop&crop=face"
+              },
+              {
+                id: 2,
+                comment: 'Documento correcto y completo',
+                status: 'aprobado',
+                timestamp: '2024-01-16T14:30:00',
+                userName: 'Carlos Rodríguez',
+                userAvatar: "https://images.unsplash.com/photo-1560250097-0b93528c311a?w=100&h=100&fit=crop&crop=face"
+              }
+            ]
           }
         ],
         'Documentos Médicos': [
@@ -69,7 +97,41 @@ const ClaimDetails = () => {
             type: 'Informe Médico',
             status: 'rechazado',
             comment: 'Falta firma del médico tratante y sello',
-            url: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf'
+            url: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
+            commentHistory: [
+              {
+                id: 1,
+                comment: 'Documento recibido para revisión',
+                status: 'recibido',
+                timestamp: '2024-01-17T09:00:00',
+                userName: 'Carlos Rodríguez',
+                userAvatar: "https://images.unsplash.com/photo-1560250097-0b93528c311a?w=100&h=100&fit=crop&crop=face"
+              },
+              {
+                id: 2,
+                comment: 'El documento está ilegible, favor de enviar una versión más clara',
+                status: 'rechazado',
+                timestamp: '2024-01-17T11:15:00',
+                userName: 'Carlos Rodríguez',
+                userAvatar: "https://images.unsplash.com/photo-1560250097-0b93528c311a?w=100&h=100&fit=crop&crop=face"
+              },
+              {
+                id: 3,
+                comment: 'Documento resubido por el cliente',
+                status: 'recibido',
+                timestamp: '2024-01-18T08:30:00',
+                userName: 'Sistema',
+                userAvatar: null
+              },
+              {
+                id: 4,
+                comment: 'Falta firma del médico tratante y sello',
+                status: 'rechazado',
+                timestamp: '2024-01-18T10:45:00',
+                userName: 'Carlos Rodríguez',
+                userAvatar: "https://images.unsplash.com/photo-1560250097-0b93528c311a?w=100&h=100&fit=crop&crop=face"
+              }
+            ]
           },
           {
             id: 'doc-4',
@@ -77,7 +139,17 @@ const ClaimDetails = () => {
             type: 'Receta',
             status: 'aprobado',
             comment: '',
-            url: 'https://images.unsplash.com/photo-1559757148-5c350d0d3c56?w=800&h=600&fit=crop'
+            url: 'https://images.unsplash.com/photo-1559757148-5c350d0d3c56?w=800&h=600&fit=crop',
+            commentHistory: [
+              {
+                id: 1,
+                comment: 'Documento recibido y aprobado',
+                status: 'aprobado',
+                timestamp: '2024-01-16T15:20:00',
+                userName: 'Carlos Rodríguez',
+                userAvatar: "https://images.unsplash.com/photo-1560250097-0b93528c311a?w=100&h=100&fit=crop&crop=face"
+              }
+            ]
           }
         ],
         'Documentos de Identidad': [
@@ -87,7 +159,17 @@ const ClaimDetails = () => {
             type: 'Identificación',
             status: 'aprobado',
             comment: '',
-            url: 'https://images.unsplash.com/photo-1541701494587-cb58502866ab?w=800&h=600&fit=crop'
+            url: 'https://images.unsplash.com/photo-1541701494587-cb58502866ab?w=800&h=600&fit=crop',
+            commentHistory: [
+              {
+                id: 1,
+                comment: 'Documento de identidad válido y legible',
+                status: 'aprobado',
+                timestamp: '2024-01-16T16:00:00',
+                userName: 'Carlos Rodríguez',
+                userAvatar: "https://images.unsplash.com/photo-1560250097-0b93528c311a?w=100&h=100&fit=crop&crop=face"
+              }
+            ]
           }
         ],
         'Facturas y Comprobantes': [
@@ -97,7 +179,8 @@ const ClaimDetails = () => {
             type: 'Factura',
             status: 'pendiente',
             comment: 'Documento pendiente de recepción',
-            url: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf'
+            url: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
+            commentHistory: []
           }
         ]
       };
@@ -292,11 +375,25 @@ const ClaimDetails = () => {
     if (action === 'reject') {
       setShowCommentModal(true);
     } else if (action === 'approve') {
-      // Actualizar estado del documento a aprobado
+      // Actualizar estado del documento a aprobado y agregar al historial
       Object.keys(documents).forEach(category => {
         const updatedDocs = documents[category].map(doc => {
           if (doc.id === docId) {
-            return { ...doc, status: 'aprobado' };
+            const newHistoryEntry = {
+              id: (doc.commentHistory?.length || 0) + 1,
+              comment: 'Documento aprobado',
+              status: 'aprobado',
+              timestamp: new Date().toISOString(),
+              userName: user?.name || 'Administrador',
+              userAvatar: user?.avatar || "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop&crop=face"
+            };
+
+            return { 
+              ...doc, 
+              status: 'aprobado',
+              comment: 'Documento aprobado',
+              commentHistory: [...(doc.commentHistory || []), newHistoryEntry]
+            };
           }
           return doc;
         });
@@ -325,11 +422,25 @@ const ClaimDetails = () => {
   };
 
   const handleCommentSubmit = () => {
-    // Actualizar estado del documento a rechazado y agregar comentario
+    // Actualizar estado del documento a rechazado y agregar comentario al historial
     Object.keys(documents).forEach(category => {
       const updatedDocs = documents[category].map(doc => {
         if (doc.id === currentDocId) {
-          return { ...doc, status: 'rechazado', comment };
+          const newHistoryEntry = {
+            id: (doc.commentHistory?.length || 0) + 1,
+            comment: comment,
+            status: 'rechazado',
+            timestamp: new Date().toISOString(),
+            userName: user?.name || 'Administrador',
+            userAvatar: user?.avatar || "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop&crop=face"
+          };
+
+          return { 
+            ...doc, 
+            status: 'rechazado', 
+            comment: comment,
+            commentHistory: [...(doc.commentHistory || []), newHistoryEntry]
+          };
         }
         return doc;
       });
@@ -382,15 +493,25 @@ const ClaimDetails = () => {
       return;
     }
 
-    // Actualizar estado del documento
+    // Actualizar estado del documento y agregar al historial
     Object.keys(documents).forEach(category => {
       const updatedDocs = documents[category].map(doc => {
         if (doc.id === docId) {
+          const newHistoryEntry = {
+            id: (doc.commentHistory?.length || 0) + 1,
+            comment: 'Documento resubido, pendiente de revisión',
+            status: 'recibido',
+            timestamp: new Date().toISOString(),
+            userName: 'Sistema',
+            userAvatar: null
+          };
+
           return {
             ...doc,
             name: file.name,
             status: 'recibido',
-            comment: 'Documento resubido, pendiente de revisión'
+            comment: 'Documento resubido, pendiente de revisión',
+            commentHistory: [...(doc.commentHistory || []), newHistoryEntry]
           };
         }
         return doc;
@@ -580,26 +701,26 @@ const ClaimDetails = () => {
               <div className="space-y-2">
                 <div className="flex items-center space-x-2">
                   <SafeIcon icon={FiUser} className="w-4 h-4 text-gray-500" />
-                  <span className="font-medium">Nombre:</span>
-                  <span>{contact.name}</span>
+                  <span className="font-medium text-gray-700">Nombre:</span>
+                  <span className="text-gray-900">{contact.name}</span>
                 </div>
                 <div className="flex items-center space-x-2">
                   <SafeIcon icon={FiMail} className="w-4 h-4 text-gray-500" />
-                  <span className="font-medium">Email:</span>
-                  <span>{contact.email}</span>
+                  <span className="font-medium text-gray-700">Email:</span>
+                  <span className="text-gray-900">{contact.email}</span>
                 </div>
               </div>
               <div className="space-y-2">
                 <div className="flex items-center space-x-2">
                   <SafeIcon icon={FiPhone} className="w-4 h-4 text-gray-500" />
-                  <span className="font-medium">WhatsApp:</span>
-                  <span>{contact.whatsapp}</span>
+                  <span className="font-medium text-gray-700">WhatsApp:</span>
+                  <span className="text-gray-900">{contact.whatsapp}</span>
                 </div>
                 {/* Mostrar roles si tiene más de uno */}
                 {contact.roles && contact.roles.length > 1 && (
                   <div className="flex items-center space-x-2">
                     <SafeIcon icon={FiUsers} className="w-4 h-4 text-gray-500" />
-                    <span className="font-medium">Roles:</span>
+                    <span className="font-medium text-gray-700">Roles:</span>
                     <div className="flex flex-wrap gap-1">
                       {contact.roles.map((role) => {
                         const roleLabels = {
@@ -629,6 +750,62 @@ const ClaimDetails = () => {
     );
   };
 
+  // Función para renderizar el historial de comentarios de un documento
+  const renderCommentHistory = (commentHistory) => {
+    if (!commentHistory || commentHistory.length === 0) {
+      return null;
+    }
+
+    return (
+      <div className="px-3 py-2 border-t border-gray-200 bg-white rounded-b-md">
+        <div className="mb-2">
+          <h5 className="text-xs font-medium text-gray-600 mb-2">Historial de Comentarios:</h5>
+        </div>
+        <div className="space-y-3 max-h-40 overflow-y-auto">
+          {commentHistory.map((entry) => (
+            <div key={entry.id} className="flex items-start space-x-2 text-xs">
+              <div className="flex-shrink-0">
+                {entry.userAvatar ? (
+                  <img 
+                    src={entry.userAvatar} 
+                    alt={entry.userName} 
+                    className="w-6 h-6 rounded-full object-cover"
+                  />
+                ) : (
+                  <div className="w-6 h-6 flex items-center justify-center bg-gray-100 rounded-full">
+                    <SafeIcon icon={FiUser} className="w-3 h-3 text-gray-500" />
+                  </div>
+                )}
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center space-x-2 mb-1">
+                  <span className="font-medium text-gray-700">{entry.userName}</span>
+                  <span className={`px-1.5 py-0.5 text-xs rounded-full ${
+                    entry.status === 'aprobado' ? 'bg-green-100 text-green-700' :
+                    entry.status === 'rechazado' ? 'bg-red-100 text-red-700' :
+                    'bg-blue-100 text-blue-700'
+                  }`}>
+                    {entry.status}
+                  </span>
+                  <span className="text-gray-500">
+                    {new Date(entry.timestamp).toLocaleDateString('es-MX', {
+                      day: '2-digit',
+                      month: '2-digit',
+                      year: 'numeric',
+                      hour: '2-digit',
+                      minute: '2-digit'
+                    })}
+                  </span>
+                </div>
+                <p className="text-gray-600 text-xs break-words">{entry.comment}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  };
+
   return (
     <Layout title={`Reclamo - ${claimCode}`}>
       <div className="max-w-6xl mx-auto space-y-6">
@@ -640,10 +817,10 @@ const ClaimDetails = () => {
               className="flex items-center space-x-2 text-gray-600 hover:text-primary transition-colors"
             >
               <SafeIcon icon={FiArrowLeft} className="w-5 h-5" />
-              <span>Volver</span>
+              <span className="text-sm font-medium">Volver</span>
             </button>
             <div>
-              <h2 className="text-2xl font-bold text-gray-900">Reclamo - {claimCode}</h2>
+              <h1 className="text-2xl font-bold text-gray-900">Reclamo - {claimCode}</h1>
               <div className="flex items-center space-x-3 mt-1">
                 <span className={`px-2 py-1 text-sm font-medium rounded-full ${getStatusColor(claim.status)}`}>
                   {claim.status}
@@ -657,11 +834,111 @@ const ClaimDetails = () => {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Información Principal */}
           <div className="lg:col-span-2 space-y-6">
+            {/* Información del Reclamo - Movido arriba con iconos */}
+            <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+              <div className="flex items-center space-x-2 mb-6">
+                <SafeIcon icon={FiClipboard} className="w-6 h-6 text-primary" />
+                <h2 className="text-xl font-semibold text-gray-900">Detalles del Reclamo</h2>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                <div className="space-y-4">
+                  <div className="flex items-center space-x-3">
+                    <SafeIcon icon={FiTag} className="w-5 h-5 text-gray-500" />
+                    <div>
+                      <span className="text-sm font-medium text-gray-700">Tipo de reclamo:</span>
+                      <p className="text-base text-gray-900">{claimData.claimType}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center space-x-3">
+                    <SafeIcon icon={FiMapPin} className="w-5 h-5 text-gray-500" />
+                    <div>
+                      <span className="text-sm font-medium text-gray-700">Tipo de servicio:</span>
+                      <p className="text-base text-gray-900">{claimData.serviceType}</p>
+                    </div>
+                  </div>
+                </div>
+                <div className="space-y-4">
+                  <div className="flex items-center space-x-3">
+                    <SafeIcon icon={FiBuilding} className="w-5 h-5 text-gray-500" />
+                    <div>
+                      <span className="text-sm font-medium text-gray-700">Aseguradora:</span>
+                      <p className="text-base text-gray-900">{claimData.insurance}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center space-x-3">
+                    <SafeIcon icon={FiShield} className="w-5 h-5 text-gray-500" />
+                    <div>
+                      <span className="text-sm font-medium text-gray-700">Póliza:</span>
+                      <p className="text-base text-gray-900">{claimData.policyNumber}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="border-t border-gray-200 pt-4">
+                <div className="flex items-center space-x-3 mb-3">
+                  <SafeIcon icon={FiCalendar} className="w-5 h-5 text-gray-500" />
+                  <div>
+                    <span className="text-sm font-medium text-gray-700">Fecha de creación:</span>
+                    <p className="text-base text-gray-900">{claimData.date}</p>
+                  </div>
+                </div>
+                
+                <div className="flex items-start space-x-3">
+                  <SafeIcon icon={FiInfo} className="w-5 h-5 text-gray-500 mt-0.5" />
+                  <div>
+                    <span className="text-sm font-medium text-gray-700">Número de reclamo:</span>
+                    {isEditingClaimNumber ? (
+                      <div className="flex items-center mt-1">
+                        <input
+                          type="text"
+                          value={claimNumber}
+                          onChange={(e) => setClaimNumber(e.target.value)}
+                          className="border border-gray-300 rounded-md px-2 py-1 text-sm w-full"
+                          placeholder="Ingrese número de reclamo"
+                        />
+                        <button
+                          onClick={handleSaveClaimNumber}
+                          className="ml-2 text-green-600 hover:text-green-800"
+                        >
+                          <SafeIcon icon={FiSave} className="w-4 h-4" />
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="flex items-center">
+                        <p className="text-base text-gray-900">{claimNumber || "No asignado"}</p>
+                        {user?.role === 'admin' && (
+                          <button
+                            onClick={() => setIsEditingClaimNumber(true)}
+                            className="ml-2 text-gray-500 hover:text-gray-700"
+                          >
+                            <SafeIcon icon={FiEdit} className="w-4 h-4" />
+                          </button>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+              
+              {claimData.description && (
+                <div className="border-t border-gray-200 pt-4 mt-4">
+                  <div className="flex items-start space-x-3">
+                    <SafeIcon icon={FiMessageSquare} className="w-5 h-5 text-gray-500 mt-0.5" />
+                    <div>
+                      <span className="text-sm font-medium text-gray-700">Descripción:</span>
+                      <p className="text-base text-gray-900 mt-1">{claimData.description}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
             {/* Información de Contactos con Tabs */}
             <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
               <div className="flex items-center space-x-2 mb-6">
-                <SafeIcon icon={FiUsers} className="w-5 h-5 text-primary" />
-                <h3 className="text-lg font-medium text-gray-900">Personas Involucradas</h3>
+                <SafeIcon icon={FiUsers} className="w-6 h-6 text-primary" />
+                <h2 className="text-xl font-semibold text-gray-900">Personas Involucradas</h2>
               </div>
               
               {/* Tabs */}
@@ -704,78 +981,18 @@ const ClaimDetails = () => {
               </div>
             </div>
 
-            {/* Información del Reclamo */}
-            <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-              <div className="flex items-center space-x-2 mb-4">
-                <SafeIcon icon={FiFileText} className="w-5 h-5 text-primary" />
-                <h3 className="text-lg font-medium text-gray-900">Detalles del Reclamo</h3>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm mb-4">
-                <div>
-                  <span className="font-medium text-gray-700">Tipo de reclamo:</span>
-                  <p className="text-gray-900">{claimData.claimType}</p>
-                </div>
-                <div>
-                  <span className="font-medium text-gray-700">Tipo de servicio:</span>
-                  <p className="text-gray-900">{claimData.serviceType}</p>
-                </div>
-                <div>
-                  <span className="font-medium text-gray-700">Aseguradora:</span>
-                  <p className="text-gray-900">{claimData.insurance}</p>
-                </div>
-                <div>
-                  <span className="font-medium text-gray-700">Número de reclamo:</span>
-                  {isEditingClaimNumber ? (
-                    <div className="flex items-center mt-1">
-                      <input
-                        type="text"
-                        value={claimNumber}
-                        onChange={(e) => setClaimNumber(e.target.value)}
-                        className="border border-gray-300 rounded-md px-2 py-1 text-sm w-full"
-                        placeholder="Ingrese número de reclamo"
-                      />
-                      <button
-                        onClick={handleSaveClaimNumber}
-                        className="ml-2 text-green-600 hover:text-green-800"
-                      >
-                        <SafeIcon icon={FiSave} className="w-4 h-4" />
-                      </button>
-                    </div>
-                  ) : (
-                    <div className="flex items-center">
-                      <p className="text-gray-900">{claimNumber || "No asignado"}</p>
-                      {user?.role === 'admin' && (
-                        <button
-                          onClick={() => setIsEditingClaimNumber(true)}
-                          className="ml-2 text-gray-500 hover:text-gray-700"
-                        >
-                          <SafeIcon icon={FiEdit} className="w-4 h-4" />
-                        </button>
-                      )}
-                    </div>
-                  )}
-                </div>
-              </div>
-              {claimData.description && (
-                <div>
-                  <span className="font-medium text-gray-700">Descripción:</span>
-                  <p className="text-gray-900 mt-1">{claimData.description}</p>
-                </div>
-              )}
-            </div>
-
             {/* Documentos */}
             <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-              <div className="flex items-center space-x-2 mb-4">
-                <SafeIcon icon={FiFileText} className="w-5 h-5 text-primary" />
-                <h3 className="text-lg font-medium text-gray-900">Documentos</h3>
+              <div className="flex items-center space-x-2 mb-6">
+                <SafeIcon icon={FiFileText} className="w-6 h-6 text-primary" />
+                <h2 className="text-xl font-semibold text-gray-900">Documentos</h2>
               </div>
 
               {Object.keys(documents).length > 0 ? (
                 <div className="space-y-6">
                   {Object.keys(documents).map((category) => (
                     <div key={category} className="space-y-3">
-                      <h4 className="text-md font-medium text-gray-800">{category}</h4>
+                      <h3 className="text-lg font-medium text-gray-800">{category}</h3>
                       <div className="space-y-4">
                         {documents[category].map((doc) => (
                           <div
@@ -843,17 +1060,8 @@ const ClaimDetails = () => {
                               </div>
                             </div>
 
-                            {doc.comment && (
-                              <div className="px-3 py-2 border-t border-gray-200 bg-white rounded-b-md">
-                                <div className="flex items-start space-x-2">
-                                  <SafeIcon icon={FiMessageSquare} className="w-4 h-4 text-gray-500 mt-0.5" />
-                                  <div className="text-sm text-gray-700">
-                                    <p className="font-medium text-xs text-gray-500 mb-1">Comentario:</p>
-                                    {doc.comment}
-                                  </div>
-                                </div>
-                              </div>
-                            )}
+                            {/* Historial de comentarios */}
+                            {renderCommentHistory(doc.commentHistory)}
 
                             {reuploadMode === doc.id && (
                               <div className="p-3 border-t border-gray-200 bg-white rounded-b-md">
@@ -899,7 +1107,7 @@ const ClaimDetails = () => {
             {/* Cambiar Estatus (Solo Admin) */}
             {user?.role === 'admin' && (
               <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-                <h3 className="text-lg font-medium text-gray-900 mb-4">Cambiar Estatus</h3>
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Cambiar Estatus</h3>
                 <div className="space-y-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Nuevo estatus</label>
@@ -926,9 +1134,9 @@ const ClaimDetails = () => {
               </div>
             )}
 
-            {/* Resumen de Documentos - Movido arriba del historial */}
+            {/* Resumen de Documentos */}
             <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-              <h3 className="text-lg font-medium text-gray-900 mb-4">Resumen de Documentos</h3>
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Resumen de Documentos</h3>
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-2">
@@ -969,9 +1177,9 @@ const ClaimDetails = () => {
               </div>
             </div>
 
-            {/* Historial de Actividad - Con avatares */}
+            {/* Historial de Actividad */}
             <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-              <h3 className="text-lg font-medium text-gray-900 mb-4">Historial de Actividad</h3>
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Historial de Actividad</h3>
               <div className="space-y-4">
                 {activityLog.map((activity, index) => (
                   <div key={index} className="flex items-start space-x-3">

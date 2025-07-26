@@ -13,8 +13,8 @@ const CreateClaim = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const complementData = location.state?.complementData;
-  const { user } = useAuth(); // Obtener el usuario actual
-  
+  const { user } = useAuth();
+
   const [formData, setFormData] = useState({
     // Datos generales del reclamo
     policyNumber: '',
@@ -26,13 +26,14 @@ const CreateClaim = () => {
     previousClaimNumber: '',
     description: '',
     signatureType: 'electronic',
-    
+
     // Contactos con sus roles
     contacts: {
       policyholder: null, // Asegurado Titular
       affected: null, // Asegurado Afectado
       accountHolder: null, // Titular de la cuenta bancaria
-      manager: user ? { // El gestor siempre es el usuario actual
+      manager: user ? {
+        // El gestor siempre es el usuario actual
         name: user.name,
         email: user.email,
         whatsapp: user.whatsapp || '',
@@ -40,30 +41,37 @@ const CreateClaim = () => {
         userId: user.id
       } : null
     },
-    
-    // Flags
+
+    // Flags para "Mismo que..."
     isSameAsAffected: {
       policyholder: false,
-      accountHolder: false
+      accountHolder: false,
     },
-    
-    // Flags para "Yo soy..." 
+
+    // Flags para "Yo soy..."
     isCurrentUser: {
       affected: false,
       policyholder: false,
       accountHolder: false
     },
-    
+
     // Guardar contactos
     saveContacts: true
   });
 
+  // Documentos por sección
   const [documents, setDocuments] = useState({
     section1: [],
     section2: [],
-    section3: []
+    section3: [],
+    // Nuevos campos para documentos de identidad por persona
+    identificationDocs: {
+      affected: [],
+      policyholder: [],
+      accountHolder: []
+    }
   });
-  
+
   const [loading, setLoading] = useState(false);
   const [whatsappError, setWhatsappError] = useState('');
   const [showContactSelector, setShowContactSelector] = useState(false);
@@ -84,7 +92,6 @@ const CreateClaim = () => {
         email: complementData.customerEmail,
         whatsapp: complementData.customerWhatsApp,
       };
-      
       setFormData(prev => ({
         ...prev,
         policyNumber: complementData.policyNumber || '',
@@ -130,24 +137,23 @@ const CreateClaim = () => {
       '#A78BFA', // Púrpura
       '#F472B6', // Rosa
     ];
-    
+
     let hash = 0;
     for (let i = 0; i < name.length; i++) {
       hash = name.charCodeAt(i) + ((hash << 5) - hash);
     }
-    
     const index = Math.abs(hash) % colors.length;
     return colors[index];
   };
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    
+
     // No permitir cambios en insurance y previousClaimNumber si es un complemento
     if (complementData && (name === 'insurance' || name === 'previousClaimNumber')) {
       return;
     }
-    
+
     if (name === 'customerWhatsApp') {
       if (value && !value.startsWith('+')) {
         setWhatsappError('El número debe incluir el código de país (ej. +52)');
@@ -155,7 +161,7 @@ const CreateClaim = () => {
         setWhatsappError('');
       }
     }
-    
+
     setFormData(prev => {
       if (name === 'claimType') {
         return {
@@ -167,7 +173,10 @@ const CreateClaim = () => {
           previousClaimNumber: ''
         };
       }
-      return { ...prev, [name]: value };
+      return {
+        ...prev,
+        [name]: value
+      };
     });
   };
 
@@ -182,7 +191,7 @@ const CreateClaim = () => {
         }
       }
     }));
-    
+
     // Validar WhatsApp
     if (field === 'whatsapp') {
       if (value && !value.startsWith('+')) {
@@ -195,7 +204,10 @@ const CreateClaim = () => {
 
   const handleCheckboxChange = (e) => {
     const { name, checked } = e.target;
-    setFormData(prev => ({ ...prev, [name]: checked }));
+    setFormData(prev => ({
+      ...prev,
+      [name]: checked
+    }));
   };
 
   const handleSameAsAffectedChange = (role) => {
@@ -204,7 +216,7 @@ const CreateClaim = () => {
         ...prev.isSameAsAffected,
         [role]: !prev.isSameAsAffected[role]
       };
-      
+
       const newContacts = { ...prev.contacts };
       if (newIsSameAsAffected[role]) {
         // Si se marca como mismo que afectado, copiar datos
@@ -213,10 +225,13 @@ const CreateClaim = () => {
         // Si se desmarca, limpiar los datos
         newContacts[role] = { name: '', email: '', whatsapp: '', avatar: '' };
       }
-      
+
       // Resetear también el flag de "Yo soy"
-      const newIsCurrentUser = { ...prev.isCurrentUser, [role]: false };
-      
+      const newIsCurrentUser = {
+        ...prev.isCurrentUser,
+        [role]: false
+      };
+
       return {
         ...prev,
         isSameAsAffected: newIsSameAsAffected,
@@ -232,10 +247,13 @@ const CreateClaim = () => {
         ...prev.isCurrentUser,
         [role]: !prev.isCurrentUser[role]
       };
-      
+
       const newContacts = { ...prev.contacts };
-      const newIsSameAsAffected = { ...prev.isSameAsAffected, [role]: false };
-      
+      const newIsSameAsAffected = {
+        ...prev.isSameAsAffected,
+        [role]: false
+      };
+
       if (newIsCurrentUser[role]) {
         // Si se marca como el usuario actual, copiar datos del usuario
         newContacts[role] = {
@@ -248,7 +266,7 @@ const CreateClaim = () => {
         // Si se desmarca, limpiar los datos
         newContacts[role] = { name: '', email: '', whatsapp: '', avatar: '' };
       }
-      
+
       return {
         ...prev,
         isCurrentUser: newIsCurrentUser,
@@ -262,21 +280,33 @@ const CreateClaim = () => {
     setFormData(prev => {
       const currentServices = [...prev.serviceTypes];
       const serviceIndex = currentServices.indexOf(service);
+      
       if (serviceIndex === -1) {
         currentServices.push(service);
       } else {
         currentServices.splice(serviceIndex, 1);
       }
-      
+
       if (service === 'Cirugía' && serviceIndex !== -1) {
-        return { ...prev, serviceTypes: currentServices, isTraumaOrthopedicSurgery: false };
+        return {
+          ...prev,
+          serviceTypes: currentServices,
+          isTraumaOrthopedicSurgery: false
+        };
       }
-      return { ...prev, serviceTypes: currentServices };
+
+      return {
+        ...prev,
+        serviceTypes: currentServices
+      };
     });
   };
 
   const handleSignatureTypeChange = (type) => {
-    setFormData(prev => ({ ...prev, signatureType: type }));
+    setFormData(prev => ({
+      ...prev,
+      signatureType: type
+    }));
   };
 
   const getServiceOptions = () => {
@@ -305,7 +335,7 @@ const CreateClaim = () => {
     const allowedTypes = ['application/pdf', 'image/png', 'image/jpeg', 'image/jpg'];
     const maxFileSize = 10 * 1024 * 1024; // 10MB
     const maxFiles = 5; // Máximo 5 archivos por campo
-    
+
     const validFiles = files.filter(file => {
       if (!allowedTypes.includes(file.type)) {
         alert(`Archivo ${file.name} no es válido. Solo se permiten PDF, PNG y JPG.`);
@@ -322,7 +352,7 @@ const CreateClaim = () => {
       alert(`Solo se permiten máximo ${maxFiles} archivos por campo.`);
       validFiles.splice(maxFiles);
     }
-    
+
     const newDocuments = validFiles.map(file => {
       const url = URL.createObjectURL(file);
       return {
@@ -342,25 +372,78 @@ const CreateClaim = () => {
     }));
   };
 
+  // Nueva función para manejar la carga de documentos de identificación por persona
+  const handleIdentificationUpload = (e, role) => {
+    const files = Array.from(e.target.files);
+    const allowedTypes = ['application/pdf', 'image/png', 'image/jpeg', 'image/jpg'];
+    const maxFileSize = 10 * 1024 * 1024; // 10MB
+    const maxFiles = 2; // Máximo 2 archivos para identificación
+
+    const currentFiles = documents.identificationDocs[role] || [];
+    
+    // Verificar si ya hay 2 archivos
+    if (currentFiles.length >= maxFiles) {
+      alert(`Ya has subido el máximo de ${maxFiles} archivos para la identificación. Elimina uno para subir otro.`);
+      return;
+    }
+
+    // Calcular cuántos archivos más se pueden agregar
+    const remainingSlots = maxFiles - currentFiles.length;
+    
+    const validFiles = files.filter(file => {
+      if (!allowedTypes.includes(file.type)) {
+        alert(`Archivo ${file.name} no es válido. Solo se permiten PDF, PNG y JPG.`);
+        return false;
+      }
+      if (file.size > maxFileSize) {
+        alert(`Archivo ${file.name} es muy grande. Máximo 10MB por archivo.`);
+        return false;
+      }
+      return true;
+    }).slice(0, remainingSlots);
+
+    if (validFiles.length === 0) return;
+
+    const newDocuments = validFiles.map(file => {
+      const url = URL.createObjectURL(file);
+      return {
+        id: Date.now() + Math.random(),
+        name: file.name,
+        size: file.size,
+        type: file.type,
+        file: file,
+        url: url,
+        fieldName: `Identificación Oficial`
+      };
+    });
+
+    setDocuments(prev => ({
+      ...prev,
+      identificationDocs: {
+        ...prev.identificationDocs,
+        [role]: [...currentFiles, ...newDocuments]
+      }
+    }));
+  };
+
   const handleAvatarUpload = (e, role) => {
     const file = e.target.files[0];
     if (!file) return;
 
     const allowedTypes = ['image/png', 'image/jpeg', 'image/jpg'];
     const maxFileSize = 2 * 1024 * 1024; // 2MB
-    
+
     if (!allowedTypes.includes(file.type)) {
       alert('Solo se permiten imágenes PNG y JPG.');
       return;
     }
-    
+
     if (file.size > maxFileSize) {
       alert('La imagen es muy grande. Máximo 2MB.');
       return;
     }
-    
+
     const url = URL.createObjectURL(file);
-    
     setFormData(prev => ({
       ...prev,
       contacts: {
@@ -371,13 +454,13 @@ const CreateClaim = () => {
         }
       }
     }));
-    
     setAvatarFiles(prev => ({
       ...prev,
       [role]: file
     }));
   };
 
+  // Función para eliminar documento
   const removeDocument = (id, section) => {
     setDocuments(prev => {
       const updatedSection = prev[section].filter(doc => doc.id !== id);
@@ -389,6 +472,25 @@ const CreateClaim = () => {
       return {
         ...prev,
         [section]: updatedSection
+      };
+    });
+  };
+
+  // Función para eliminar documento de identificación
+  const removeIdentificationDocument = (id, role) => {
+    setDocuments(prev => {
+      const updatedDocs = prev.identificationDocs[role].filter(doc => doc.id !== id);
+      // Revocar URL para evitar fugas de memoria
+      const removedDoc = prev.identificationDocs[role].find(doc => doc.id === id);
+      if (removedDoc && removedDoc.url) {
+        URL.revokeObjectURL(removedDoc.url);
+      }
+      return {
+        ...prev,
+        identificationDocs: {
+          ...prev.identificationDocs,
+          [role]: updatedDocs
+        }
       };
     });
   };
@@ -556,7 +658,7 @@ const CreateClaim = () => {
       alert('Debe ingresar los datos del Asegurado Afectado');
       return false;
     }
-    
+
     // Validar WhatsApp
     if (
       (formData.contacts.affected?.whatsapp && !formData.contacts.affected.whatsapp.startsWith('+')) ||
@@ -566,13 +668,13 @@ const CreateClaim = () => {
       setWhatsappError('El número debe incluir el código de país (ej. +52)');
       return false;
     }
-    
+
     // Validar campos requeridos del formulario
     if (!formData.policyNumber || !formData.insurance || !formData.claimType || !formData.description) {
       alert('Debe completar todos los campos obligatorios');
       return false;
     }
-    
+
     // Validar que si es tipo Reembolso tenga un titular de cuenta bancaria
     if (formData.claimType === 'Reembolso' && !formData.contacts.accountHolder) {
       alert('Para reclamos de tipo Reembolso, debe especificar el Titular de la Cuenta Bancaria');
@@ -584,25 +686,22 @@ const CreateClaim = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
     if (!validateForm()) {
       return;
     }
-    
+
     setLoading(true);
-    
     try {
       // Aquí iría la lógica para guardar los contactos vinculados al usuario actual
       if (formData.saveContacts) {
         // Simulación de guardado exitoso de contactos y vinculación
         console.log('Guardando contactos:', formData.contacts);
-        
         // Ejemplo de cómo se guardarían y vincularían los contactos:
         // 1. Crear/actualizar contactos
         // 2. Vincular contactos con el usuario actual
         console.log('Vinculando contactos con el usuario:', user.id);
       }
-      
+
       await new Promise(resolve => setTimeout(resolve, 1000));
       alert('Reclamo creado exitosamente');
       navigate('/dashboard');
@@ -621,6 +720,7 @@ const CreateClaim = () => {
 
   const section1Fields = getSection1Fields();
   const section3Fields = getSection3Fields();
+
   const showSection2ForReembolso = (formData.insurance === 'GNP' || formData.insurance === 'AXA') && formData.claimType === 'Reembolso';
   const showSection2ForProgramacion = (formData.insurance === 'GNP' || formData.insurance === 'AXA') && formData.claimType === 'Programación';
   const showSection2 = showSection2ForReembolso || showSection2ForProgramacion;
@@ -659,15 +759,20 @@ const CreateClaim = () => {
     const showSameAsAffectedOption = role !== 'affected' && formData.contacts.affected;
     const initials = getInitials(contact.name);
     const avatarColor = getAvatarColor(contact.name);
+    
+    // Obtener documentos de identificación de este rol
+    const identificationDocs = documents.identificationDocs[role] || [];
 
     return (
       <div className={`p-6 rounded-lg shadow-sm mb-6 ${bgColorClass}`}>
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center space-x-2">
-            <SafeIcon icon={RoleIcon} className={`w-5 h-5 ${role === 'affected' ? 'text-blue-600' : role === 'policyholder' ? 'text-green-600' : 'text-purple-600'}`} />
+            <SafeIcon 
+              icon={RoleIcon} 
+              className={`w-5 h-5 ${role === 'affected' ? 'text-blue-600' : role === 'policyholder' ? 'text-green-600' : 'text-purple-600'}`}
+            />
             <h3 className="text-lg font-medium text-gray-900">
-              {roleLabel}
-              {isRequired && <span className="text-red-500">*</span>}
+              {roleLabel} {isRequired && <span className="text-red-500">*</span>}
             </h3>
           </div>
           
@@ -704,9 +809,9 @@ const CreateClaim = () => {
                 </label>
               </div>
             )}
-            
+
             {/* Botón para seleccionar contacto guardado */}
-            <button 
+            <button
               type="button"
               onClick={() => openContactSelector(role)}
               disabled={disabled || formData.isSameAsAffected[role] || formData.isCurrentUser[role]}
@@ -722,19 +827,21 @@ const CreateClaim = () => {
           </div>
         </div>
         
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {/* Avatar - Primera columna */}
-          <div className="flex flex-col items-center justify-start">
-            <div className="mb-3">
+        {/* Layout optimizado - Nuevo diseño más compacto */}
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+          {/* Primera columna - Avatar y nombre */}
+          <div className="flex flex-col items-center space-y-4">
+            {/* Avatar */}
+            <div className="mb-2">
               {contact.avatar ? (
-                <img 
-                  src={contact.avatar} 
-                  alt={contact.name || roleLabel} 
-                  className="w-28 h-28 rounded-full object-cover border-2 border-gray-300"
+                <img
+                  src={contact.avatar}
+                  alt={contact.name || roleLabel}
+                  className="w-20 h-20 rounded-full object-cover border-2 border-gray-300"
                 />
               ) : (
-                <div 
-                  className="w-28 h-28 rounded-full flex items-center justify-center text-white text-2xl font-bold"
+                <div
+                  className="w-20 h-20 rounded-full flex items-center justify-center text-white text-lg font-bold"
                   style={{ backgroundColor: avatarColor }}
                 >
                   {initials}
@@ -742,13 +849,11 @@ const CreateClaim = () => {
               )}
             </div>
             
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2 text-center">
-                Foto / Avatar
-              </label>
+            {/* Upload avatar */}
+            <div className="w-full">
               <input
                 type="file"
-                accept="image/png,image/jpeg,image/jpg"
+                accept="image/png, image/jpeg, image/jpg"
                 onChange={(e) => handleAvatarUpload(e, role)}
                 disabled={disabled || formData.isSameAsAffected[role] || formData.isCurrentUser[role]}
                 className="hidden"
@@ -756,23 +861,21 @@ const CreateClaim = () => {
               />
               <label
                 htmlFor={`avatar-upload-${role}`}
-                className={`inline-block px-4 py-2 text-sm rounded-md text-center w-full ${
+                className={`inline-block px-3 py-2 text-xs rounded-md text-center w-full ${
                   disabled || formData.isSameAsAffected[role] || formData.isCurrentUser[role]
                     ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
                     : 'bg-gray-200 text-gray-700 hover:bg-gray-300 cursor-pointer'
                 }`}
               >
-                <SafeIcon icon={FiUpload} className="w-4 h-4 inline mr-1" />
-                Subir imagen
+                <SafeIcon icon={FiUpload} className="w-3 h-3 inline mr-1" />
+                Subir foto
               </label>
             </div>
-          </div>
-          
-          {/* Campos de datos - Segunda y tercera columna */}
-          <div className="col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Nombre completo {isRequired && '*'}
+
+            {/* Nombre completo - Movido aquí */}
+            <div className="w-full">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Nombre {isRequired && '*'}
               </label>
               <input
                 type="text"
@@ -781,16 +884,19 @@ const CreateClaim = () => {
                 value={contact.name || ''}
                 onChange={(e) => handleContactChange(role, 'name', e.target.value)}
                 disabled={disabled || formData.isSameAsAffected[role] || formData.isCurrentUser[role]}
-                className={`w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary ${
+                className={`w-full border border-gray-300 rounded-md px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary ${
                   disabled || formData.isSameAsAffected[role] || formData.isCurrentUser[role] ? 'bg-gray-50' : ''
                 }`}
                 placeholder="Nombre completo"
               />
             </div>
-            
+          </div>
+          
+          {/* Segunda columna - Datos de contacto */}
+          <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Correo electrónico {isRequired && '*'}
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Email {isRequired && '*'}
               </label>
               <input
                 type="email"
@@ -799,7 +905,7 @@ const CreateClaim = () => {
                 value={contact.email || ''}
                 onChange={(e) => handleContactChange(role, 'email', e.target.value)}
                 disabled={disabled || formData.isSameAsAffected[role] || formData.isCurrentUser[role]}
-                className={`w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary ${
+                className={`w-full border border-gray-300 rounded-md px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary ${
                   disabled || formData.isSameAsAffected[role] || formData.isCurrentUser[role] ? 'bg-gray-50' : ''
                 }`}
                 placeholder="correo@ejemplo.com"
@@ -807,7 +913,7 @@ const CreateClaim = () => {
             </div>
             
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
                 WhatsApp {isRequired && '*'}
               </label>
               <input
@@ -818,8 +924,10 @@ const CreateClaim = () => {
                 onChange={(e) => handleContactChange(role, 'whatsapp', e.target.value)}
                 disabled={disabled || formData.isSameAsAffected[role] || formData.isCurrentUser[role]}
                 className={`w-full border ${
-                  whatsappError && !formData.isSameAsAffected[role] && !formData.isCurrentUser[role] ? 'border-red-300' : 'border-gray-300'
-                } rounded-md px-3 py-2 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary ${
+                  whatsappError && !formData.isSameAsAffected[role] && !formData.isCurrentUser[role]
+                    ? 'border-red-300'
+                    : 'border-gray-300'
+                } rounded-md px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary ${
                   disabled || formData.isSameAsAffected[role] || formData.isCurrentUser[role] ? 'bg-gray-50' : ''
                 }`}
                 placeholder="+52 55 1234 5678"
@@ -829,6 +937,79 @@ const CreateClaim = () => {
               )}
             </div>
           </div>
+
+          {/* Tercera y cuarta columna - Identificación oficial */}
+          <div className="lg:col-span-2">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Identificación oficial {isRequired && '*'}
+            </label>
+            <div className="border-2 border-dashed border-gray-300 rounded-lg p-3 bg-white hover:border-gray-400 transition-colors">
+              <div className="text-center">
+                <SafeIcon icon={FiUpload} className="w-5 h-5 text-gray-400 mx-auto mb-2" />
+                <p className="text-xs text-gray-600 mb-2">
+                  INE por ambos lados o Pasaporte (Vigentes)
+                </p>
+                <input
+                  type="file"
+                  multiple
+                  accept=".pdf,.png,.jpg,.jpeg"
+                  onChange={(e) => handleIdentificationUpload(e, role)}
+                  disabled={disabled || formData.isSameAsAffected[role]}
+                  className="hidden"
+                  id={`id-upload-${role}`}
+                />
+                <label
+                  htmlFor={`id-upload-${role}`}
+                  className={`inline-block bg-gray-200 text-gray-700 px-3 py-1 rounded-md text-xs cursor-pointer hover:bg-gray-300 transition-colors ${
+                    disabled || formData.isSameAsAffected[role] ? 'opacity-50 cursor-not-allowed' : ''
+                  }`}
+                >
+                  Seleccionar archivos
+                </label>
+                <p className="text-xs text-gray-500 mt-1">
+                  Máximo 2 archivos, 10MB cada uno
+                </p>
+              </div>
+            </div>
+            
+            {/* Mostrar documentos de identificación cargados */}
+            {identificationDocs.length > 0 && (
+              <div className="mt-3">
+                <h4 className="text-sm font-medium text-gray-700 mb-2">Archivos cargados ({identificationDocs.length}/2)</h4>
+                <div className="space-y-2">
+                  {identificationDocs.map((doc) => (
+                    <div key={doc.id} className="flex items-center justify-between p-2 bg-white border border-gray-200 rounded hover:bg-gray-50">
+                      <div className="flex items-center space-x-2 truncate flex-1">
+                        <SafeIcon icon={FiFileText} className="w-4 h-4 text-gray-500 flex-shrink-0" />
+                        <span className="text-sm text-gray-900 truncate" title={doc.name}>
+                          {doc.name}
+                        </span>
+                      </div>
+                      <div className="flex items-center space-x-1">
+                        <span className="text-xs text-gray-500 mr-2">{formatFileSize(doc.size)}</span>
+                        <button
+                          type="button"
+                          onClick={() => openDocumentPreview(doc)}
+                          className="p-1 text-primary hover:text-primary-dark"
+                          title="Vista previa"
+                        >
+                          <SafeIcon icon={FiEye} className="w-4 h-4" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => removeIdentificationDocument(doc.id, role)}
+                          className="p-1 text-red-500 hover:text-red-700"
+                          title="Eliminar"
+                        >
+                          <SafeIcon icon={FiX} className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     );
@@ -836,6 +1017,11 @@ const CreateClaim = () => {
 
   // Renderizar un campo de documento con su sección de archivos cargados
   const renderDocumentField = (fieldName, section, isOptional = false) => {
+    // No renderizar los campos de identificación que ahora están en los formularios de contacto
+    if (fieldName.includes('Identificación Oficial')) {
+      return null;
+    }
+    
     const fieldDocuments = getDocumentsByField(section, fieldName) || [];
     
     return (
@@ -886,8 +1072,8 @@ const CreateClaim = () => {
               ) : (
                 <div className="space-y-2 max-h-[200px] overflow-y-auto border border-gray-200 rounded-lg p-2">
                   {fieldDocuments.map((doc) => (
-                    <div 
-                      key={doc.id} 
+                    <div
+                      key={doc.id}
                       className="flex items-center justify-between p-2 bg-white border border-gray-100 rounded hover:bg-gray-50"
                     >
                       <div className="flex items-center space-x-2 truncate flex-1">
@@ -939,7 +1125,7 @@ const CreateClaim = () => {
               : 'Completa la información para crear tu reclamo de seguro'}
           </p>
         </div>
-
+        
         <form onSubmit={handleSubmit} className="space-y-8">
           {/* Información del Reclamo - Movido al inicio y siempre visible */}
           <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
@@ -947,7 +1133,6 @@ const CreateClaim = () => {
               <SafeIcon icon={FiFileText} className="w-5 h-5 text-primary" />
               <h3 className="text-lg font-medium text-gray-900">Información del Reclamo</h3>
             </div>
-            
             <div className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
@@ -967,7 +1152,6 @@ const CreateClaim = () => {
                     placeholder="Número de póliza"
                   />
                 </div>
-                
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Aseguradora *
@@ -988,7 +1172,6 @@ const CreateClaim = () => {
                     <option value="Qualitas">Qualitas</option>
                   </select>
                 </div>
-                
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Tipo de reclamo *
@@ -1032,7 +1215,7 @@ const CreateClaim = () => {
                   </div>
                 )}
               </div>
-
+              
               {formData.claimType === 'Reembolso' && formData.claimInitialType === 'Complemento' && (
                 <div className="mt-4">
                   <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -1050,7 +1233,7 @@ const CreateClaim = () => {
                   />
                 </div>
               )}
-
+              
               {formData.claimType && (
                 <div className="mt-6 border-t border-gray-200 pt-6">
                   <label className="block text-sm font-medium text-gray-700 mb-3">
@@ -1067,14 +1250,15 @@ const CreateClaim = () => {
                           className="h-4 w-4 text-primary border-gray-300 rounded focus:ring-primary"
                         />
                         <label htmlFor={`service-${service.name}`} className="ml-2 text-sm text-gray-700">
-                          <span className="mr-2 text-lg">{service.emoji}</span> {service.name}
+                          <span className="mr-2 text-lg">{service.emoji}</span>
+                          {service.name}
                         </label>
                       </div>
                     ))}
                   </div>
                 </div>
               )}
-
+              
               {formData.serviceTypes.includes('Cirugía') && (
                 <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-md">
                   <div className="flex items-center">
@@ -1096,7 +1280,7 @@ const CreateClaim = () => {
                   </div>
                 </div>
               )}
-
+              
               <div className="mt-6">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Descripción del Siniestro *
@@ -1113,16 +1297,16 @@ const CreateClaim = () => {
               </div>
             </div>
           </div>
-
+          
           {/* Información del Asegurado Afectado - Siempre requerido */}
           {renderContactForm('affected', true, !!complementData)}
-
+          
           {/* Información del Asegurado Titular */}
           {renderContactForm('policyholder', true, !!complementData)}
-
+          
           {/* Información del Titular de la Cuenta Bancaria - Solo para Reembolso */}
           {formData.claimType === 'Reembolso' && renderContactForm('accountHolder', true, false)}
-
+          
           {/* Opción de guardar contactos - Movido justo después de los contactos */}
           <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
             <div className="flex items-center">
@@ -1139,7 +1323,7 @@ const CreateClaim = () => {
               </label>
             </div>
           </div>
-
+          
           {/* Sección 1: Firmas de Formas de Aseguradora */}
           {section1Fields.length > 0 && (
             <div className="bg-blue-50 border border-blue-200 p-6 rounded-lg shadow-sm">
@@ -1147,7 +1331,7 @@ const CreateClaim = () => {
                 <SafeIcon icon={FiFileText} className="w-5 h-5 text-blue-600" />
                 <h3 className="text-lg font-medium text-blue-900">Sección 1: Firmas de Formas de Aseguradora</h3>
               </div>
-
+              
               {/* Toggle de tipo de firma */}
               <div className="mb-6 flex items-center justify-center bg-white p-3 rounded-lg border border-blue-100">
                 <div className="flex space-x-4">
@@ -1175,7 +1359,7 @@ const CreateClaim = () => {
                   </button>
                 </div>
               </div>
-
+              
               {formData.signatureType === 'electronic' ? (
                 <div className="bg-blue-50 p-4 rounded-md border border-blue-200">
                   <div className="flex items-center space-x-2 mb-2">
@@ -1183,8 +1367,7 @@ const CreateClaim = () => {
                     <p className="font-medium text-blue-800">Firma Electrónica</p>
                   </div>
                   <p className="text-blue-700">
-                    Busca en tu buzón de entrada los emails que te enviamos solicitando la firma digital de los documentos
-                    solicitados por la aseguradora.
+                    Busca en tu buzón de entrada los emails que te enviamos solicitando la firma digital de los documentos solicitados por la aseguradora.
                   </p>
                 </div>
               ) : (
@@ -1194,7 +1377,7 @@ const CreateClaim = () => {
               )}
             </div>
           )}
-
+          
           {/* Sección 2: Documentos del Siniestro */}
           {showSection2 && (
             <div className="bg-green-50 border border-green-200 p-6 rounded-lg shadow-sm">
@@ -1202,24 +1385,16 @@ const CreateClaim = () => {
                 <SafeIcon icon={FiFileText} className="w-5 h-5 text-green-600" />
                 <h3 className="text-lg font-medium text-green-900">Sección 2: Documentos del Siniestro</h3>
               </div>
-              
               <div className="space-y-6">
                 {/* Informe Médico */}
                 {renderDocumentField('Informe Médico', 'section2')}
                 
-                {/* Identificación Oficial del Asegurado Afectado */}
-                {renderDocumentField('Identificación Oficial del Asegurado Afectado', 'section2')}
-                
                 {/* Carátula del Estado de Cuenta Bancaria - Solo para Reembolso */}
                 {formData.claimType === 'Reembolso' && renderDocumentField('Carátula del Estado de Cuenta Bancaria', 'section2')}
-                
-                {/* Identificación del Titular de Cuenta Bancaria (condicional) - Solo para Reembolso */}
-                {formData.claimType === 'Reembolso' && !formData.isSameAsAffected.accountHolder && 
-                  renderDocumentField('Identificación Oficial del Titular de la Cuenta Bancaria', 'section2')}
               </div>
             </div>
           )}
-
+          
           {/* Sección 3: Facturas, Recetas, Estudios y Otros Documentos */}
           {section3Fields.length > 0 && (
             <div className="bg-orange-50 border border-orange-200 p-6 rounded-lg shadow-sm">
@@ -1229,15 +1404,13 @@ const CreateClaim = () => {
                   Sección 3: Facturas, Recetas, Estudios y Otros Documentos
                 </h3>
               </div>
-              
               <div className="space-y-6">
-                {section3Fields.map((field) => 
-                  renderDocumentField(field, 'section3', field.includes('(opcional)'))
-                )}
+                {section3Fields.map((field) => renderDocumentField(field, 'section3', field.includes('(opcional)')))
+                }
               </div>
             </div>
           )}
-
+          
           {/* Botones */}
           <div className="flex flex-col sm:flex-row justify-end space-y-3 sm:space-y-0 sm:space-x-4">
             <button
@@ -1260,7 +1433,7 @@ const CreateClaim = () => {
       
       {/* Modal de selección de contacto */}
       {showContactSelector && (
-        <ContactSelector 
+        <ContactSelector
           onSelect={handleSelectContact}
           onClose={() => setShowContactSelector(false)}
           role={contactRoleLabels[currentContactRole]}
@@ -1270,7 +1443,7 @@ const CreateClaim = () => {
       
       {/* Modal de previsualización de documentos */}
       {showPreview && previewDocument && (
-        <DocumentPreview 
+        <DocumentPreview
           document={previewDocument}
           onClose={() => setShowPreview(false)}
         />
