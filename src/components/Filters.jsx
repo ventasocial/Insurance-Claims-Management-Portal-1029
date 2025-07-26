@@ -2,7 +2,7 @@ import React from 'react';
 import * as FiIcons from 'react-icons/fi';
 import SafeIcon from '../common/SafeIcon';
 
-const { FiFilter, FiX } = FiIcons;
+const { FiFilter, FiX, FiSearch } = FiIcons;
 
 const Filters = ({ filters, setFilters }) => {
   const handleReset = () => {
@@ -16,20 +16,11 @@ const Filters = ({ filters, setFilters }) => {
   };
 
   const handleFilterChange = (field, value) => {
-    setFilters(prev => ({
-      ...prev,
-      [field]: value
-    }));
+    setFilters(prev => ({ ...prev, [field]: value }));
   };
 
   const handleIncludeChange = (field) => {
-    setFilters(prev => ({
-      ...prev,
-      [field]: {
-        ...prev[field],
-        include: !prev[field].include
-      }
-    }));
+    setFilters(prev => ({ ...prev, [field]: { ...prev[field], include: !prev[field].include } }));
   };
 
   return (
@@ -50,17 +41,30 @@ const Filters = ({ filters, setFilters }) => {
 
       <div className="flex flex-col md:flex-row gap-4 items-end">
         {/* Búsqueda por palabra clave */}
-        <div className="flex-1">
+        <div className="flex-1 relative">
           <label className="block text-sm font-medium text-gray-700 mb-1">
             Palabra clave
           </label>
-          <input
-            type="text"
-            value={filters.keyword}
-            onChange={(e) => handleFilterChange('keyword', e.target.value)}
-            placeholder="Buscar por nombre, póliza, servicio..."
-            className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary text-sm"
-          />
+          <div className="relative">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <SafeIcon icon={FiSearch} className="h-5 w-5 text-gray-400" />
+            </div>
+            <input
+              type="text"
+              value={filters.keyword}
+              onChange={(e) => handleFilterChange('keyword', e.target.value)}
+              placeholder="Buscar por nombre, póliza, servicio, grupo o agente..."
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary text-sm"
+            />
+            {filters.keyword && (
+              <button
+                onClick={() => handleFilterChange('keyword', '')}
+                className="absolute inset-y-0 right-0 pr-3 flex items-center"
+              >
+                <SafeIcon icon={FiX} className="h-5 w-5 text-gray-400 hover:text-gray-600" />
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Estatus */}

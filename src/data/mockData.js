@@ -252,7 +252,9 @@ export const mockUsers = [
     createdAt: '2023-10-15',
     status: 'active',
     lastLogin: '2024-06-01 09:23:45',
-    groupId: null
+    groupId: null,
+    avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop&crop=face',
+    whatsapp: '+52 55 1111 0000'
   },
   {
     id: 2,
@@ -262,7 +264,9 @@ export const mockUsers = [
     createdAt: '2023-11-20',
     status: 'active',
     lastLogin: '2024-06-01 14:12:30',
-    groupId: 1
+    groupId: 1,
+    avatar: 'https://images.unsplash.com/photo-1494790108755-2616b612b5e5?w=100&h=100&fit=crop&crop=face',
+    whatsapp: '+52 55 2222 0000'
   },
   {
     id: 3,
@@ -272,7 +276,9 @@ export const mockUsers = [
     createdAt: '2024-01-10',
     status: 'active',
     lastLogin: '2024-05-28 11:45:22',
-    groupId: 1
+    groupId: 1,
+    avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop&crop=face',
+    whatsapp: '+52 55 1234 5678'
   },
   {
     id: 4,
@@ -282,7 +288,9 @@ export const mockUsers = [
     createdAt: '2024-02-05',
     status: 'inactive',
     lastLogin: '2024-04-15 16:30:10',
-    groupId: 2
+    groupId: 2,
+    avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100&h=100&fit=crop&crop=face',
+    whatsapp: '+52 55 9876 5432'
   },
   {
     id: 5,
@@ -293,7 +301,9 @@ export const mockUsers = [
     status: 'active',
     lastLogin: '2024-06-01 08:15:33',
     groupId: null,
-    assignedGroups: [1, 2] // Grupos asignados al agente
+    assignedGroups: [1, 2], // Grupos asignados al agente
+    avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100&h=100&fit=crop&crop=face',
+    whatsapp: '+52 55 3333 1111'
   },
   {
     id: 6,
@@ -304,7 +314,9 @@ export const mockUsers = [
     status: 'active',
     lastLogin: '2024-05-30 13:40:55',
     groupId: null,
-    assignedGroups: [2, 3]
+    assignedGroups: [2, 3],
+    avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=100&h=100&fit=crop&crop=face',
+    whatsapp: '+52 55 4444 2222'
   },
   {
     id: 7,
@@ -315,7 +327,9 @@ export const mockUsers = [
     status: 'active',
     lastLogin: '2024-05-31 16:22:10',
     groupId: null,
-    assignedGroups: [1, 3]
+    assignedGroups: [1, 3],
+    avatar: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=100&h=100&fit=crop&crop=face',
+    whatsapp: '+52 55 5555 3333'
   },
   {
     id: 8,
@@ -325,7 +339,9 @@ export const mockUsers = [
     createdAt: '2024-03-08',
     status: 'active',
     lastLogin: '2024-05-29 10:15:33',
-    groupId: 3
+    groupId: 3,
+    avatar: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?w=100&h=100&fit=crop&crop=face',
+    whatsapp: '+52 55 6666 4444'
   },
   {
     id: 9,
@@ -335,7 +351,9 @@ export const mockUsers = [
     createdAt: '2024-04-12',
     status: 'active',
     lastLogin: '2024-05-28 14:45:20',
-    groupId: 1
+    groupId: 1,
+    avatar: 'https://images.unsplash.com/photo-1519244703995-f4e0f30006d5?w=100&h=100&fit=crop&crop=face',
+    whatsapp: '+52 55 7777 5555'
   },
   {
     id: 10,
@@ -345,7 +363,9 @@ export const mockUsers = [
     createdAt: '2024-05-01',
     status: 'inactive',
     lastLogin: '2024-05-20 08:30:15',
-    groupId: 2
+    groupId: 2,
+    avatar: 'https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?w=100&h=100&fit=crop&crop=face',
+    whatsapp: '+52 55 8888 6666'
   }
 ];
 
