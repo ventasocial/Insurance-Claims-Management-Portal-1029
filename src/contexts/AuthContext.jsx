@@ -1,5 +1,4 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import supabase from '../lib/supabase';
 
 const AuthContext = createContext();
 
@@ -16,221 +15,80 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Verificar si hay una sesión activa
-    const checkSession = async () => {
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        
-        if (session) {
-          // Verificar si el perfil existe, si no, crearlo (para usuarios de Google)
-          let userData = null;
-          
-          const { data: existingUser } = await supabase
-            .from('user_profiles_asdl5678f')
-            .select('*')
-            .eq('id', session.user.id)
-            .single();
-            
-          if (existingUser) {
-            userData = existingUser;
-          } else if (session.user.app_metadata.provider === 'google') {
-            // Usuario de Google sin perfil, crear uno
-            const names = session.user.user_metadata.full_name.split(' ');
-            const firstName = names[0] || '';
-            const paternalLastName = names.length > 1 ? names[1] : '';
-            const maternalLastName = names.length > 2 ? names.slice(2).join(' ') : '';
-            
-            const { data: newUser, error } = await supabase
-              .from('user_profiles_asdl5678f')
-              .insert({
-                id: session.user.id,
-                first_name: firstName,
-                paternal_last_name: paternalLastName,
-                maternal_last_name: maternalLastName,
-                email: session.user.email,
-                role: 'client', // Por defecto es cliente
-                status: 'active',
-              })
-              .select()
-              .single();
-              
-            if (error) {
-              console.error('Error al crear perfil de usuario:', error);
-            } else {
-              userData = newUser;
-            }
-          }
-          
-          if (userData) {
-            setUser({
-              id: session.user.id,
-              email: session.user.email,
-              name: `${userData.first_name} ${userData.paternal_last_name} ${userData.maternal_last_name}`.trim(),
-              firstName: userData.first_name,
-              paternalLastName: userData.paternal_last_name,
-              maternalLastName: userData.maternal_last_name,
-              whatsapp: userData.whatsapp,
-              role: userData.role
-            });
-          }
-        }
-      } catch (error) {
-        console.error('Error al verificar la sesión:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    checkSession();
-
-    // Suscribirse a cambios en la autenticación
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (event === 'SIGNED_IN' && session) {
-        // Verificar si el usuario tiene un perfil, si no, crearlo (para usuarios de Google)
-        let userData = null;
-        
-        const { data: existingUser } = await supabase
-          .from('user_profiles_asdl5678f')
-          .select('*')
-          .eq('id', session.user.id)
-          .single();
-          
-        if (existingUser) {
-          userData = existingUser;
-          
-          // Actualizar último acceso
-          await supabase
-            .from('user_profiles_asdl5678f')
-            .update({ last_login: new Date().toISOString() })
-            .eq('id', session.user.id);
-        } else if (session.user.app_metadata.provider === 'google') {
-          // Usuario de Google sin perfil, crear uno
-          const names = session.user.user_metadata.full_name.split(' ');
-          const firstName = names[0] || '';
-          const paternalLastName = names.length > 1 ? names[1] : '';
-          const maternalLastName = names.length > 2 ? names.slice(2).join(' ') : '';
-          
-          const { data: newUser, error } = await supabase
-            .from('user_profiles_asdl5678f')
-            .insert({
-              id: session.user.id,
-              first_name: firstName,
-              paternal_last_name: paternalLastName,
-              maternal_last_name: maternalLastName,
-              email: session.user.email,
-              role: 'client', // Por defecto es cliente
-              status: 'active',
-              last_login: new Date().toISOString()
-            })
-            .select()
-            .single();
-            
-          if (error) {
-            console.error('Error al crear perfil de usuario:', error);
-          } else {
-            userData = newUser;
-          }
-        }
-        
-        if (userData) {
-          setUser({
-            id: session.user.id,
-            email: session.user.email,
-            name: `${userData.first_name} ${userData.paternal_last_name} ${userData.maternal_last_name}`.trim(),
-            firstName: userData.first_name,
-            paternalLastName: userData.paternal_last_name,
-            maternalLastName: userData.maternal_last_name,
-            whatsapp: userData.whatsapp,
-            role: userData.role
-          });
-        }
-      } else if (event === 'SIGNED_OUT') {
-        setUser(null);
-      }
-    });
-
-    return () => {
-      subscription?.unsubscribe();
-    };
+    // Verificar si hay un usuario en localStorage
+    const savedUser = localStorage.getItem('user');
+    if (savedUser) {
+      setUser(JSON.parse(savedUser));
+    }
+    setLoading(false);
   }, []);
 
   const login = async (email, password) => {
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password
-      });
-
-      if (error) {
-        console.error('Error de login:', error);
-        return { success: false, error: error.message };
+      // Simulación de login - en producción conectar con backend real
+      if (email === 'admin@seguro.com' && password === 'admin123') {
+        const userData = {
+          id: 1,
+          email: 'admin@seguro.com',
+          name: 'Administrador',
+          firstName: 'Admin',
+          paternalLastName: 'Demo',
+          maternalLastName: '',
+          whatsapp: '+52 55 1234 5678',
+          role: 'admin'
+        };
+        setUser(userData);
+        localStorage.setItem('user', JSON.stringify(userData));
+        return { success: true };
+      } else if (email === 'staff@seguro.com' && password === 'staff123') {
+        const userData = {
+          id: 5,
+          email: 'staff@seguro.com',
+          name: 'Staff Demo',
+          firstName: 'Staff',
+          paternalLastName: 'Demo',
+          maternalLastName: '',
+          whatsapp: '+52 55 8765 4321',
+          role: 'staff'
+        };
+        setUser(userData);
+        localStorage.setItem('user', JSON.stringify(userData));
+        return { success: true };
+      } else if (email === 'cliente@email.com' && password === 'cliente123') {
+        const userData = {
+          id: 2,
+          email: 'cliente@email.com',
+          name: 'Cliente Demo',
+          firstName: 'Cliente',
+          paternalLastName: 'Demo',
+          maternalLastName: 'Test',
+          whatsapp: '+52 55 9876 5432',
+          role: 'client'
+        };
+        setUser(userData);
+        localStorage.setItem('user', JSON.stringify(userData));
+        return { success: true };
+      } else {
+        return { success: false, error: 'Credenciales inválidas' };
       }
-
-      // Los datos del usuario se configuran en el efecto de onAuthStateChange
-      return { success: true };
     } catch (error) {
-      console.error('Error en login:', error);
       return { success: false, error: 'Error al iniciar sesión' };
     }
   };
 
-  const signInWithGoogle = async () => {
-    try {
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: `${window.location.origin}/#/auth/callback`,
-        },
-      });
-      
-      if (error) throw error;
-      
-      return { success: true };
-    } catch (error) {
-      console.error('Error al iniciar sesión con Google:', error);
-      return { success: false, error: 'Error al iniciar sesión con Google' };
-    }
+  const updateUserProfile = (updatedUserData) => {
+    setUser(updatedUserData);
+    localStorage.setItem('user', JSON.stringify(updatedUserData));
   };
 
-  const updateUserProfile = async (updatedUserData) => {
-    try {
-      const { error } = await supabase
-        .from('user_profiles_asdl5678f')
-        .update({
-          first_name: updatedUserData.firstName,
-          paternal_last_name: updatedUserData.paternalLastName,
-          maternal_last_name: updatedUserData.maternalLastName,
-          email: updatedUserData.email,
-          whatsapp: updatedUserData.whatsapp
-        })
-        .eq('id', user.id);
-
-      if (error) {
-        console.error('Error al actualizar el perfil:', error);
-        return { success: false, error: error.message };
-      }
-
-      setUser(updatedUserData);
-      return { success: true };
-    } catch (error) {
-      console.error('Error al actualizar el perfil:', error);
-      return { success: false, error: 'Error al actualizar el perfil' };
-    }
-  };
-
-  const logout = async () => {
-    try {
-      await supabase.auth.signOut();
-      setUser(null);
-    } catch (error) {
-      console.error('Error al cerrar sesión:', error);
-    }
+  const logout = () => {
+    setUser(null);
+    localStorage.removeItem('user');
   };
 
   const value = {
     user,
     login,
-    signInWithGoogle,
     logout,
     updateUserProfile,
     loading
