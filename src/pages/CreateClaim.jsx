@@ -6,8 +6,10 @@ import * as FiIcons from 'react-icons/fi';
 import SafeIcon from '../common/SafeIcon';
 import ContactSelector from '../components/ContactSelector';
 import DocumentPreview from '../components/DocumentPreview';
+import PersonForm from '../components/PersonForm';
+import AvatarUploader from '../components/AvatarUploader';
 
-const { FiUser, FiMail, FiPhone, FiFileText, FiUpload, FiX, FiAlertCircle, FiCheck, FiUsers, FiCreditCard, FiEye } = FiIcons;
+const { FiUser, FiMail, FiPhone, FiFileText, FiUpload, FiX, FiAlertCircle, FiCheck, FiUsers, FiCreditCard, FiEye, FiEdit, FiUserPlus } = FiIcons;
 
 const CreateClaim = () => {
   const navigate = useNavigate();
@@ -34,7 +36,11 @@ const CreateClaim = () => {
       accountHolder: null, // Titular de la cuenta bancaria
       manager: user ? {
         // El gestor siempre es el usuario actual
+        firstName: user.firstName,
+        paternalLastName: user.paternalLastName,
+        maternalLastName: user.maternalLastName,
         name: user.name,
+        emails: user.emails || [{ email: user.email, isPrimary: true, id: Date.now() }],
         email: user.email,
         whatsapp: user.whatsapp || '',
         avatar: user.avatar || '',
@@ -78,18 +84,19 @@ const CreateClaim = () => {
   const [currentContactRole, setCurrentContactRole] = useState(null);
   const [showPreview, setShowPreview] = useState(false);
   const [previewDocument, setPreviewDocument] = useState(null);
-  const [avatarFiles, setAvatarFiles] = useState({
-    affected: null,
-    policyholder: null,
-    accountHolder: null
-  });
+  const [showPersonForm, setShowPersonForm] = useState(false);
+  const [editingContact, setEditingContact] = useState(null);
 
   // Pre-cargar datos si viene de complemento
   useEffect(() => {
     if (complementData) {
       const affected = {
+        firstName: complementData.customerFirstName || '',
+        paternalLastName: complementData.customerPaternalLastName || '',
+        maternalLastName: complementData.customerMaternalLastName || '',
         name: complementData.customerName,
         email: complementData.customerEmail,
+        emails: [{ email: complementData.customerEmail, isPrimary: true, id: Date.now() }],
         whatsapp: complementData.customerWhatsApp,
       };
       setFormData(prev => ({
@@ -114,20 +121,29 @@ const CreateClaim = () => {
   }, [complementData]);
 
   // Generar iniciales para el avatar
-  const getInitials = (name) => {
-    if (!name) return '';
-    const nameParts = name.trim().split(/\s+/);
-    if (nameParts.length >= 2) {
-      return (nameParts[0][0] + nameParts[1][0]).toUpperCase();
-    } else if (nameParts.length === 1) {
-      return nameParts[0].substring(0, 2).toUpperCase();
+  const getInitials = (person) => {
+    if (!person) return '';
+    const firstName = person.firstName || '';
+    const paternalLastName = person.paternalLastName || '';
+    
+    if (firstName && paternalLastName) {
+      return (firstName[0] + paternalLastName[0]).toUpperCase();
+    } else if (firstName) {
+      return firstName.substring(0, 2).toUpperCase();
+    } else if (person.name) {
+      const nameParts = person.name.trim().split(/\s+/);
+      if (nameParts.length >= 2) {
+        return (nameParts[0][0] + nameParts[1][0]).toUpperCase();
+      } else {
+        return nameParts[0].substring(0, 2).toUpperCase();
+      }
     }
     return '';
   };
 
   // Generar color de fondo para avatar basado en el nombre
-  const getAvatarColor = (name) => {
-    if (!name) return '#CCCCCC';
+  const getAvatarColor = (person) => {
+    const name = person?.name || person?.firstName || 'Usuario';
     const colors = [
       '#F87171', // Rojo
       '#FB923C', // Naranja
@@ -223,7 +239,7 @@ const CreateClaim = () => {
         newContacts[role] = { ...prev.contacts.affected };
       } else {
         // Si se desmarca, limpiar los datos
-        newContacts[role] = { name: '', email: '', whatsapp: '', avatar: '' };
+        newContacts[role] = null;
       }
 
       // Resetear también el flag de "Yo soy"
@@ -257,14 +273,18 @@ const CreateClaim = () => {
       if (newIsCurrentUser[role]) {
         // Si se marca como el usuario actual, copiar datos del usuario
         newContacts[role] = {
+          firstName: user.firstName,
+          paternalLastName: user.paternalLastName,
+          maternalLastName: user.maternalLastName,
           name: user.name,
           email: user.email,
+          emails: user.emails || [{ email: user.email, isPrimary: true, id: Date.now() }],
           whatsapp: user.whatsapp || '',
           avatar: user.avatar || ''
         };
       } else {
         // Si se desmarca, limpiar los datos
-        newContacts[role] = { name: '', email: '', whatsapp: '', avatar: '' };
+        newContacts[role] = null;
       }
 
       return {
@@ -423,40 +443,6 @@ const CreateClaim = () => {
         ...prev.identificationDocs,
         [role]: [...currentFiles, ...newDocuments]
       }
-    }));
-  };
-
-  const handleAvatarUpload = (e, role) => {
-    const file = e.target.files[0];
-    if (!file) return;
-
-    const allowedTypes = ['image/png', 'image/jpeg', 'image/jpg'];
-    const maxFileSize = 2 * 1024 * 1024; // 2MB
-
-    if (!allowedTypes.includes(file.type)) {
-      alert('Solo se permiten imágenes PNG y JPG.');
-      return;
-    }
-
-    if (file.size > maxFileSize) {
-      alert('La imagen es muy grande. Máximo 2MB.');
-      return;
-    }
-
-    const url = URL.createObjectURL(file);
-    setFormData(prev => ({
-      ...prev,
-      contacts: {
-        ...prev.contacts,
-        [role]: {
-          ...prev.contacts[role],
-          avatar: url
-        }
-      }
-    }));
-    setAvatarFiles(prev => ({
-      ...prev,
-      [role]: file
     }));
   };
 
@@ -652,6 +638,42 @@ const CreateClaim = () => {
     setShowContactSelector(false);
   };
 
+  const handleCreateNewContact = (role) => {
+    setCurrentContactRole(role);
+    setEditingContact(null);
+    setShowPersonForm(true);
+  };
+
+  const handleEditContact = (role) => {
+    setCurrentContactRole(role);
+    setEditingContact(formData.contacts[role]);
+    setShowPersonForm(true);
+  };
+
+  const handleSavePerson = (personData) => {
+    // Aquí verificaríamos si ya existe un usuario con ese email
+    // Por ahora, simulamos la creación/vinculación
+    
+    setFormData(prev => ({
+      ...prev,
+      contacts: {
+        ...prev.contacts,
+        [currentContactRole]: personData
+      },
+      isSameAsAffected: {
+        ...prev.isSameAsAffected,
+        [currentContactRole]: false
+      },
+      isCurrentUser: {
+        ...prev.isCurrentUser,
+        [currentContactRole]: false
+      }
+    }));
+    
+    setShowPersonForm(false);
+    setEditingContact(null);
+  };
+
   const validateForm = () => {
     // Validar que al menos exista el contacto afectado
     if (!formData.contacts.affected || !formData.contacts.affected.name || !formData.contacts.affected.email) {
@@ -757,8 +779,8 @@ const CreateClaim = () => {
 
     // Para los roles que no son el afectado, mostrar opción de "mismo que afectado"
     const showSameAsAffectedOption = role !== 'affected' && formData.contacts.affected;
-    const initials = getInitials(contact.name);
-    const avatarColor = getAvatarColor(contact.name);
+    const initials = getInitials(contact);
+    const avatarColor = getAvatarColor(contact);
     
     // Obtener documentos de identificación de este rol
     const identificationDocs = documents.identificationDocs[role] || [];
@@ -827,190 +849,157 @@ const CreateClaim = () => {
           </div>
         </div>
         
-        {/* Layout optimizado - Nuevo diseño más compacto */}
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-          {/* Primera columna - Avatar y nombre */}
-          <div className="flex flex-col items-center space-y-4">
-            {/* Avatar */}
-            <div className="mb-2">
-              {contact.avatar ? (
-                <img
-                  src={contact.avatar}
-                  alt={contact.name || roleLabel}
-                  className="w-20 h-20 rounded-full object-cover border-2 border-gray-300"
-                />
-              ) : (
-                <div
-                  className="w-20 h-20 rounded-full flex items-center justify-center text-white text-lg font-bold"
-                  style={{ backgroundColor: avatarColor }}
+        {/* Mostrar formulario si hay contacto o si se están llenando los datos */}
+        {(contact.name || contact.firstName || !formData.isSameAsAffected[role]) && !formData.isCurrentUser[role] ? (
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+            {/* Primera columna - Avatar y información básica */}
+            <div className="flex flex-col items-center space-y-4">
+              {/* Avatar */}
+              <div className="mb-2">
+                {contact.avatar ? (
+                  <img
+                    src={contact.avatar}
+                    alt={contact.name || roleLabel}
+                    className="w-20 h-20 rounded-full object-cover border-2 border-gray-300"
+                  />
+                ) : (
+                  <div
+                    className="w-20 h-20 rounded-full flex items-center justify-center text-white text-lg font-bold"
+                    style={{ backgroundColor: avatarColor }}
+                  >
+                    {initials}
+                  </div>
+                )}
+              </div>
+
+              {/* Información básica del contacto */}
+              <div className="text-center space-y-1">
+                <p className="font-medium text-gray-900">
+                  {contact.name || `${contact.firstName || ''} ${contact.paternalLastName || ''}`.trim() || 'Sin nombre'}
+                </p>
+                <p className="text-sm text-gray-600">{contact.email || 'Sin email'}</p>
+                <p className="text-sm text-gray-600">{contact.whatsapp || 'Sin WhatsApp'}</p>
+              </div>
+
+              {/* Botones de acción */}
+              <div className="flex flex-col space-y-2 w-full">
+                <button
+                  type="button"
+                  onClick={() => handleEditContact(role)}
+                  className="flex items-center justify-center space-x-2 px-3 py-2 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
                 >
-                  {initials}
+                  <SafeIcon icon={FiEdit} className="w-4 h-4" />
+                  <span>Editar</span>
+                </button>
+                
+                <button
+                  type="button"
+                  onClick={() => handleCreateNewContact(role)}
+                  className="flex items-center justify-center space-x-2 px-3 py-2 text-sm bg-gray-600 text-white rounded-md hover:bg-gray-700 transition-colors"
+                >
+                  <SafeIcon icon={FiUserPlus} className="w-4 h-4" />
+                  <span>Nuevo</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Tercera y cuarta columna - Identificación oficial */}
+            <div className="lg:col-span-3">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Identificación oficial {isRequired && '*'}
+              </label>
+              <div className="border-2 border-dashed border-gray-300 rounded-lg p-3 bg-white hover:border-gray-400 transition-colors">
+                <div className="text-center">
+                  <SafeIcon icon={FiUpload} className="w-5 h-5 text-gray-400 mx-auto mb-2" />
+                  <p className="text-xs text-gray-600 mb-2">
+                    INE por ambos lados o Pasaporte (Vigentes)
+                  </p>
+                  <input
+                    type="file"
+                    multiple
+                    accept=".pdf,.png,.jpg,.jpeg"
+                    onChange={(e) => handleIdentificationUpload(e, role)}
+                    disabled={disabled || formData.isSameAsAffected[role]}
+                    className="hidden"
+                    id={`id-upload-${role}`}
+                  />
+                  <label
+                    htmlFor={`id-upload-${role}`}
+                    className={`inline-block bg-gray-200 text-gray-700 px-3 py-1 rounded-md text-xs cursor-pointer hover:bg-gray-300 transition-colors ${
+                      disabled || formData.isSameAsAffected[role] ? 'opacity-50 cursor-not-allowed' : ''
+                    }`}
+                  >
+                    Seleccionar archivos
+                  </label>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Máximo 2 archivos, 10MB cada uno
+                  </p>
+                </div>
+              </div>
+              
+              {/* Mostrar documentos de identificación cargados */}
+              {identificationDocs.length > 0 && (
+                <div className="mt-3">
+                  <h4 className="text-sm font-medium text-gray-700 mb-2">Archivos cargados ({identificationDocs.length}/2)</h4>
+                  <div className="space-y-2">
+                    {identificationDocs.map((doc) => (
+                      <div key={doc.id} className="flex items-center justify-between p-2 bg-white border border-gray-200 rounded hover:bg-gray-50">
+                        <div className="flex items-center space-x-2 truncate flex-1">
+                          <SafeIcon icon={FiFileText} className="w-4 h-4 text-gray-500 flex-shrink-0" />
+                          <span className="text-sm text-gray-900 truncate" title={doc.name}>
+                            {doc.name}
+                          </span>
+                        </div>
+                        <div className="flex items-center space-x-1">
+                          <span className="text-xs text-gray-500 mr-2">{formatFileSize(doc.size)}</span>
+                          <button
+                            type="button"
+                            onClick={() => openDocumentPreview(doc)}
+                            className="p-1 text-primary hover:text-primary-dark"
+                            title="Vista previa"
+                          >
+                            <SafeIcon icon={FiEye} className="w-4 h-4" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => removeIdentificationDocument(doc.id, role)}
+                            className="p-1 text-red-500 hover:text-red-700"
+                            title="Eliminar"
+                          >
+                            <SafeIcon icon={FiX} className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
             </div>
-            
-            {/* Upload avatar */}
-            <div className="w-full">
-              <input
-                type="file"
-                accept="image/png, image/jpeg, image/jpg"
-                onChange={(e) => handleAvatarUpload(e, role)}
-                disabled={disabled || formData.isSameAsAffected[role] || formData.isCurrentUser[role]}
-                className="hidden"
-                id={`avatar-upload-${role}`}
-              />
-              <label
-                htmlFor={`avatar-upload-${role}`}
-                className={`inline-block px-3 py-2 text-xs rounded-md text-center w-full ${
-                  disabled || formData.isSameAsAffected[role] || formData.isCurrentUser[role]
-                    ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
-                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300 cursor-pointer'
-                }`}
+          </div>
+        ) : (
+          /* Mostrar mensaje cuando no hay contacto seleccionado */
+          <div className="text-center py-8">
+            <SafeIcon icon={FiUser} className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+            <p className="text-gray-600 mb-4">
+              {formData.isSameAsAffected[role] 
+                ? `Usando los mismos datos del Asegurado Afectado`
+                : formData.isCurrentUser[role]
+                ? `Usando tus datos como ${roleLabel}`
+                : `Selecciona o crea una persona para el rol de ${roleLabel}`
+              }
+            </p>
+            {!formData.isSameAsAffected[role] && !formData.isCurrentUser[role] && (
+              <button
+                type="button"
+                onClick={() => handleCreateNewContact(role)}
+                className="flex items-center space-x-2 px-4 py-2 bg-primary text-white rounded-md hover:bg-primary-dark transition-colors mx-auto"
               >
-                <SafeIcon icon={FiUpload} className="w-3 h-3 inline mr-1" />
-                Subir foto
-              </label>
-            </div>
-
-            {/* Nombre completo - Movido aquí */}
-            <div className="w-full">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Nombre {isRequired && '*'}
-              </label>
-              <input
-                type="text"
-                name={`${role}-name`}
-                required={isRequired}
-                value={contact.name || ''}
-                onChange={(e) => handleContactChange(role, 'name', e.target.value)}
-                disabled={disabled || formData.isSameAsAffected[role] || formData.isCurrentUser[role]}
-                className={`w-full border border-gray-300 rounded-md px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary ${
-                  disabled || formData.isSameAsAffected[role] || formData.isCurrentUser[role] ? 'bg-gray-50' : ''
-                }`}
-                placeholder="Nombre completo"
-              />
-            </div>
-          </div>
-          
-          {/* Segunda columna - Datos de contacto */}
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Email {isRequired && '*'}
-              </label>
-              <input
-                type="email"
-                name={`${role}-email`}
-                required={isRequired}
-                value={contact.email || ''}
-                onChange={(e) => handleContactChange(role, 'email', e.target.value)}
-                disabled={disabled || formData.isSameAsAffected[role] || formData.isCurrentUser[role]}
-                className={`w-full border border-gray-300 rounded-md px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary ${
-                  disabled || formData.isSameAsAffected[role] || formData.isCurrentUser[role] ? 'bg-gray-50' : ''
-                }`}
-                placeholder="correo@ejemplo.com"
-              />
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                WhatsApp {isRequired && '*'}
-              </label>
-              <input
-                type="tel"
-                name={`${role}-whatsapp`}
-                required={isRequired}
-                value={contact.whatsapp || ''}
-                onChange={(e) => handleContactChange(role, 'whatsapp', e.target.value)}
-                disabled={disabled || formData.isSameAsAffected[role] || formData.isCurrentUser[role]}
-                className={`w-full border ${
-                  whatsappError && !formData.isSameAsAffected[role] && !formData.isCurrentUser[role]
-                    ? 'border-red-300'
-                    : 'border-gray-300'
-                } rounded-md px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary ${
-                  disabled || formData.isSameAsAffected[role] || formData.isCurrentUser[role] ? 'bg-gray-50' : ''
-                }`}
-                placeholder="+52 55 1234 5678"
-              />
-              {whatsappError && !formData.isSameAsAffected[role] && !formData.isCurrentUser[role] && (
-                <p className="text-red-500 text-xs mt-1">{whatsappError}</p>
-              )}
-            </div>
-          </div>
-
-          {/* Tercera y cuarta columna - Identificación oficial */}
-          <div className="lg:col-span-2">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Identificación oficial {isRequired && '*'}
-            </label>
-            <div className="border-2 border-dashed border-gray-300 rounded-lg p-3 bg-white hover:border-gray-400 transition-colors">
-              <div className="text-center">
-                <SafeIcon icon={FiUpload} className="w-5 h-5 text-gray-400 mx-auto mb-2" />
-                <p className="text-xs text-gray-600 mb-2">
-                  INE por ambos lados o Pasaporte (Vigentes)
-                </p>
-                <input
-                  type="file"
-                  multiple
-                  accept=".pdf,.png,.jpg,.jpeg"
-                  onChange={(e) => handleIdentificationUpload(e, role)}
-                  disabled={disabled || formData.isSameAsAffected[role]}
-                  className="hidden"
-                  id={`id-upload-${role}`}
-                />
-                <label
-                  htmlFor={`id-upload-${role}`}
-                  className={`inline-block bg-gray-200 text-gray-700 px-3 py-1 rounded-md text-xs cursor-pointer hover:bg-gray-300 transition-colors ${
-                    disabled || formData.isSameAsAffected[role] ? 'opacity-50 cursor-not-allowed' : ''
-                  }`}
-                >
-                  Seleccionar archivos
-                </label>
-                <p className="text-xs text-gray-500 mt-1">
-                  Máximo 2 archivos, 10MB cada uno
-                </p>
-              </div>
-            </div>
-            
-            {/* Mostrar documentos de identificación cargados */}
-            {identificationDocs.length > 0 && (
-              <div className="mt-3">
-                <h4 className="text-sm font-medium text-gray-700 mb-2">Archivos cargados ({identificationDocs.length}/2)</h4>
-                <div className="space-y-2">
-                  {identificationDocs.map((doc) => (
-                    <div key={doc.id} className="flex items-center justify-between p-2 bg-white border border-gray-200 rounded hover:bg-gray-50">
-                      <div className="flex items-center space-x-2 truncate flex-1">
-                        <SafeIcon icon={FiFileText} className="w-4 h-4 text-gray-500 flex-shrink-0" />
-                        <span className="text-sm text-gray-900 truncate" title={doc.name}>
-                          {doc.name}
-                        </span>
-                      </div>
-                      <div className="flex items-center space-x-1">
-                        <span className="text-xs text-gray-500 mr-2">{formatFileSize(doc.size)}</span>
-                        <button
-                          type="button"
-                          onClick={() => openDocumentPreview(doc)}
-                          className="p-1 text-primary hover:text-primary-dark"
-                          title="Vista previa"
-                        >
-                          <SafeIcon icon={FiEye} className="w-4 h-4" />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => removeIdentificationDocument(doc.id, role)}
-                          className="p-1 text-red-500 hover:text-red-700"
-                          title="Eliminar"
-                        >
-                          <SafeIcon icon={FiX} className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
+                <SafeIcon icon={FiUserPlus} className="w-4 h-4" />
+                <span>Crear Nueva Persona</span>
+              </button>
             )}
           </div>
-        </div>
+        )}
       </div>
     );
   };
@@ -1438,6 +1427,20 @@ const CreateClaim = () => {
           onClose={() => setShowContactSelector(false)}
           role={contactRoleLabels[currentContactRole]}
           userId={user?.id} // Pasamos el ID del usuario actual para filtrar solo sus contactos
+        />
+      )}
+
+      {/* Modal de formulario de persona */}
+      {showPersonForm && (
+        <PersonForm
+          person={editingContact}
+          onSave={handleSavePerson}
+          onCancel={() => {
+            setShowPersonForm(false);
+            setEditingContact(null);
+          }}
+          title={editingContact ? "Editar Persona" : `Nueva Persona - ${contactRoleLabels[currentContactRole]}`}
+          isEditing={!!editingContact}
         />
       )}
       
