@@ -203,58 +203,39 @@ const ClaimDetails = () => {
           // Asegurado afectado (siempre presente)
           affected: {
             name: claim.customerName,
-            firstName: claim.customerFirstName || '',
-            paternalLastName: claim.customerPaternalLastName || '',
-            maternalLastName: claim.customerMaternalLastName || '',
             email: claim.customerEmail,
             whatsapp: claim.customerWhatsApp,
             avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop&crop=face",
             roles: ["affected"]
           },
-
           // Asegurado titular (puede ser el mismo que el afectado)
           policyholder: {
             name: "Roberto Méndez García",
-            firstName: "Roberto",
-            paternalLastName: "Méndez",
-            maternalLastName: "García",
             email: "roberto.mendez@email.com",
             whatsapp: "+52 55 9988 7766",
             avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100&h=100&fit=crop&crop=face",
             roles: ["policyholder"]
           },
-
           // Titular de la cuenta bancaria (solo para reembolsos)
           accountHolder: claim.claimType === "Reembolso" ? {
-            name: claim.customerName,
-            firstName: claim.customerFirstName || '',
-            paternalLastName: claim.customerPaternalLastName || '',
-            maternalLastName: claim.customerMaternalLastName || '',
+            name: claim.customerName, // Mismo que afectado en este ejemplo
             email: claim.customerEmail,
             whatsapp: claim.customerWhatsApp,
             avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop&crop=face",
             roles: ["affected", "accountHolder"] // Tiene múltiples roles
           } : null,
-
           // Contacto o gestor
           manager: {
             name: "Ana Martínez Torres",
-            firstName: "Ana",
-            paternalLastName: "Martínez",
-            maternalLastName: "Torres",
             email: "ana.martinez@email.com",
             whatsapp: "+52 55 7777 8888",
             avatar: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100&h=100&fit=crop&crop=face",
             roles: ["manager"]
           },
-
           // Agente(s) asignado(s)
           agents: [
             {
               name: "Carlos Rodríguez",
-              firstName: "Carlos",
-              paternalLastName: "Rodríguez",
-              maternalLastName: "",
               email: "carlos.rodriguez@seguro.com",
               whatsapp: "+52 55 3333 1111",
               avatar: "https://images.unsplash.com/photo-1560250097-0b93528c311a?w=100&h=100&fit=crop&crop=face",
@@ -319,7 +300,7 @@ const ClaimDetails = () => {
       <Layout title="Reclamo no encontrado">
         <div className="text-center py-12">
           <h2 className="text-2xl font-bold text-gray-900 mb-4">Reclamo no encontrado</h2>
-          <button
+          <button 
             onClick={() => navigate(user?.role === 'admin' ? '/admin' : '/dashboard')}
             className="text-primary hover:text-primary-dark"
           >
@@ -379,6 +360,7 @@ const ClaimDetails = () => {
       userName: user?.name || 'Administrador',
       userAvatar: user?.avatar || "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop&crop=face"
     };
+
     setActivityLog([...activityLog, newActivity]);
 
     // Simulación de cambio de estatus
@@ -405,8 +387,9 @@ const ClaimDetails = () => {
               userName: user?.name || 'Administrador',
               userAvatar: user?.avatar || "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop&crop=face"
             };
-            return {
-              ...doc,
+
+            return { 
+              ...doc, 
               status: 'aprobado',
               comment: 'Documento aprobado',
               commentHistory: [...(doc.commentHistory || []), newHistoryEntry]
@@ -416,12 +399,14 @@ const ClaimDetails = () => {
         });
         documents[category] = updatedDocs;
       });
-      setDocuments({...documents});
+
+      setDocuments({ ...documents });
 
       // Añadir al historial de actividad
       const docInfo = Object.values(documents)
         .flat()
         .find(doc => doc.id === docId);
+
       const newActivity = {
         type: 'document',
         description: `Documento aprobado: ${docInfo?.name || 'Documento'}`,
@@ -430,6 +415,7 @@ const ClaimDetails = () => {
         userName: user?.name || 'Administrador',
         userAvatar: user?.avatar || "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop&crop=face"
       };
+
       setActivityLog([...activityLog, newActivity]);
       alert(`Documento aprobado exitosamente`);
     }
@@ -448,9 +434,10 @@ const ClaimDetails = () => {
             userName: user?.name || 'Administrador',
             userAvatar: user?.avatar || "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop&crop=face"
           };
-          return {
-            ...doc,
-            status: 'rechazado',
+
+          return { 
+            ...doc, 
+            status: 'rechazado', 
             comment: comment,
             commentHistory: [...(doc.commentHistory || []), newHistoryEntry]
           };
@@ -459,12 +446,14 @@ const ClaimDetails = () => {
       });
       documents[category] = updatedDocs;
     });
-    setDocuments({...documents});
+
+    setDocuments({ ...documents });
 
     // Añadir al historial de actividad
     const docInfo = Object.values(documents)
       .flat()
       .find(doc => doc.id === currentDocId);
+
     const newActivity = {
       type: 'document',
       description: `Documento rechazado: ${docInfo?.name || 'Documento'}`,
@@ -473,6 +462,7 @@ const ClaimDetails = () => {
       userName: user?.name || 'Administrador',
       userAvatar: user?.avatar || "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop&crop=face"
     };
+
     setActivityLog([...activityLog, newActivity]);
 
     setComment('');
@@ -515,6 +505,7 @@ const ClaimDetails = () => {
             userName: 'Sistema',
             userAvatar: null
           };
+
           return {
             ...doc,
             name: file.name,
@@ -527,7 +518,8 @@ const ClaimDetails = () => {
       });
       documents[category] = updatedDocs;
     });
-    setDocuments({...documents});
+
+    setDocuments({ ...documents });
 
     // Añadir al historial de actividad
     const newActivity = {
@@ -538,6 +530,7 @@ const ClaimDetails = () => {
       userName: claim.customerName,
       userAvatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop&crop=face"
     };
+
     setActivityLog([...activityLog, newActivity]);
 
     setReuploadMode(null);
@@ -557,6 +550,7 @@ const ClaimDetails = () => {
       userName: user?.name || 'Administrador',
       userAvatar: user?.avatar || "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop&crop=face"
     };
+
     setActivityLog([...activityLog, newActivity]);
 
     // Cerrar el modal y mostrar confirmación
@@ -567,6 +561,7 @@ const ClaimDetails = () => {
   const handleSaveClaimNumber = () => {
     if (claimNumber.trim()) {
       alert(`Número de reclamo guardado: ${claimNumber}`);
+      
       // Añadir al historial de actividad
       const newActivity = {
         type: 'edit',
@@ -576,6 +571,7 @@ const ClaimDetails = () => {
         userName: user?.name || 'Administrador',
         userAvatar: user?.avatar || "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop&crop=face"
       };
+
       setActivityLog([...activityLog, newActivity]);
     }
     setIsEditingClaimNumber(false);
@@ -592,24 +588,20 @@ const ClaimDetails = () => {
     return (
       <div className="w-20 h-20 border border-gray-200 rounded-lg overflow-hidden bg-gray-50 flex-shrink-0">
         {isImage ? (
-          <img
-            src={doc.url}
+          <img 
+            src={doc.url} 
             alt={doc.name}
             className="w-full h-full object-cover cursor-pointer hover:opacity-80 transition-opacity"
             onClick={() => window.open(doc.url, '_blank')}
           />
         ) : isPdf ? (
-          <div
-            className="w-full h-full flex items-center justify-center bg-red-50 cursor-pointer hover:bg-red-100 transition-colors"
-            onClick={() => window.open(doc.url, '_blank')}
-          >
+          <div className="w-full h-full flex items-center justify-center bg-red-50 cursor-pointer hover:bg-red-100 transition-colors"
+               onClick={() => window.open(doc.url, '_blank')}>
             <SafeIcon icon={FiFileText} className="w-8 h-8 text-red-500" />
           </div>
         ) : (
-          <div
-            className="w-full h-full flex items-center justify-center bg-gray-100 cursor-pointer hover:bg-gray-200 transition-colors"
-            onClick={() => window.open(doc.url, '_blank')}
-          >
+          <div className="w-full h-full flex items-center justify-center bg-gray-100 cursor-pointer hover:bg-gray-200 transition-colors"
+               onClick={() => window.open(doc.url, '_blank')}>
             <SafeIcon icon={FiFileText} className="w-8 h-8 text-gray-400" />
           </div>
         )}
@@ -620,6 +612,7 @@ const ClaimDetails = () => {
   // Función para obtener los contactos disponibles para los tabs
   const getContactTabs = () => {
     const tabs = [];
+    
     if (claimData.contacts.affected) {
       tabs.push({
         key: 'affected',
@@ -629,6 +622,7 @@ const ClaimDetails = () => {
         color: 'blue'
       });
     }
+    
     if (claimData.contacts.policyholder) {
       tabs.push({
         key: 'policyholder',
@@ -638,6 +632,7 @@ const ClaimDetails = () => {
         color: 'green'
       });
     }
+    
     if (claimData.contacts.accountHolder && claimData.claimType === 'Reembolso') {
       tabs.push({
         key: 'accountHolder',
@@ -647,6 +642,7 @@ const ClaimDetails = () => {
         color: 'purple'
       });
     }
+    
     if (claimData.contacts.manager) {
       tabs.push({
         key: 'manager',
@@ -656,6 +652,7 @@ const ClaimDetails = () => {
         color: 'orange'
       });
     }
+    
     if (claimData.contacts.agents && claimData.contacts.agents.length > 0) {
       claimData.contacts.agents.forEach((agent, index) => {
         tabs.push({
@@ -667,6 +664,7 @@ const ClaimDetails = () => {
         });
       });
     }
+    
     return tabs;
   };
 
@@ -687,7 +685,11 @@ const ClaimDetails = () => {
         <div className="flex items-start space-x-4">
           <div className="flex-shrink-0">
             {contact.avatar ? (
-              <img src={contact.avatar} alt={contact.name} className="h-16 w-16 rounded-full object-cover" />
+              <img 
+                src={contact.avatar} 
+                alt={contact.name} 
+                className="h-16 w-16 rounded-full object-cover"
+              />
             ) : (
               <div className="h-16 w-16 flex items-center justify-center bg-gray-100 rounded-full">
                 <SafeIcon icon={FiUser} className="h-8 w-8 text-gray-400" />
@@ -729,7 +731,10 @@ const ClaimDetails = () => {
                           'agent': 'Agente'
                         };
                         return (
-                          <span key={role} className="px-2 py-0.5 text-xs bg-blue-100 text-blue-800 rounded-full">
+                          <span 
+                            key={role} 
+                            className="px-2 py-0.5 text-xs bg-blue-100 text-blue-800 rounded-full"
+                          >
                             {roleLabels[role] || role}
                           </span>
                         );
@@ -761,7 +766,11 @@ const ClaimDetails = () => {
             <div key={entry.id} className="flex items-start space-x-2 text-xs">
               <div className="flex-shrink-0">
                 {entry.userAvatar ? (
-                  <img src={entry.userAvatar} alt={entry.userName} className="w-6 h-6 rounded-full object-cover" />
+                  <img 
+                    src={entry.userAvatar} 
+                    alt={entry.userName} 
+                    className="w-6 h-6 rounded-full object-cover"
+                  />
                 ) : (
                   <div className="w-6 h-6 flex items-center justify-center bg-gray-100 rounded-full">
                     <SafeIcon icon={FiUser} className="w-3 h-3 text-gray-500" />
@@ -772,11 +781,9 @@ const ClaimDetails = () => {
                 <div className="flex items-center space-x-2 mb-1">
                   <span className="font-medium text-gray-700">{entry.userName}</span>
                   <span className={`px-1.5 py-0.5 text-xs rounded-full ${
-                    entry.status === 'aprobado' 
-                      ? 'bg-green-100 text-green-700' 
-                      : entry.status === 'rechazado' 
-                        ? 'bg-red-100 text-red-700' 
-                        : 'bg-blue-100 text-blue-700'
+                    entry.status === 'aprobado' ? 'bg-green-100 text-green-700' :
+                    entry.status === 'rechazado' ? 'bg-red-100 text-red-700' :
+                    'bg-blue-100 text-blue-700'
                   }`}>
                     {entry.status}
                   </span>
@@ -799,9 +806,6 @@ const ClaimDetails = () => {
     );
   };
 
-  // Determinar si el usuario puede cambiar el estado
-  const canChangeStatus = user?.role === 'admin' || user?.role === 'staff';
-
   return (
     <Layout title={`Reclamo - ${claimCode}`}>
       <div className="max-w-6xl mx-auto space-y-6">
@@ -809,7 +813,7 @@ const ClaimDetails = () => {
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4">
             <button
-              onClick={() => navigate(user?.role === 'admin' ? '/admin' : user?.role === 'staff' ? '/staff' : '/dashboard')}
+              onClick={() => navigate(user?.role === 'admin' ? '/admin' : '/dashboard')}
               className="flex items-center space-x-2 text-gray-600 hover:text-primary transition-colors"
             >
               <SafeIcon icon={FiArrowLeft} className="w-5 h-5" />
@@ -870,6 +874,7 @@ const ClaimDetails = () => {
                   </div>
                 </div>
               </div>
+              
               <div className="border-t border-gray-200 pt-4">
                 <div className="flex items-center space-x-3 mb-3">
                   <SafeIcon icon={FiCalendar} className="w-5 h-5 text-gray-500" />
@@ -878,6 +883,7 @@ const ClaimDetails = () => {
                     <p className="text-base text-gray-900">{claimData.date}</p>
                   </div>
                 </div>
+                
                 <div className="flex items-start space-x-3">
                   <SafeIcon icon={FiInfo} className="w-5 h-5 text-gray-500 mt-0.5" />
                   <div>
@@ -901,7 +907,7 @@ const ClaimDetails = () => {
                     ) : (
                       <div className="flex items-center">
                         <p className="text-base text-gray-900">{claimNumber || "No asignado"}</p>
-                        {(user?.role === 'admin' || user?.role === 'staff') && (
+                        {user?.role === 'admin' && (
                           <button
                             onClick={() => setIsEditingClaimNumber(true)}
                             className="ml-2 text-gray-500 hover:text-gray-700"
@@ -914,6 +920,7 @@ const ClaimDetails = () => {
                   </div>
                 </div>
               </div>
+              
               {claimData.description && (
                 <div className="border-t border-gray-200 pt-4 mt-4">
                   <div className="flex items-start space-x-3">
@@ -933,7 +940,7 @@ const ClaimDetails = () => {
                 <SafeIcon icon={FiUsers} className="w-6 h-6 text-primary" />
                 <h2 className="text-xl font-semibold text-gray-900">Personas Involucradas</h2>
               </div>
-
+              
               {/* Tabs */}
               <div className="border-b border-gray-200 mb-6">
                 <nav className="-mb-px flex space-x-8 overflow-x-auto">
@@ -942,13 +949,17 @@ const ClaimDetails = () => {
                       key={tab.key}
                       onClick={() => setActiveTab(tab.key)}
                       className={`whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm flex items-center space-x-2 ${
-                        activeTab === tab.key 
-                          ? 'border-primary text-primary' 
+                        activeTab === tab.key
+                          ? 'border-primary text-primary'
                           : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                       }`}
                     >
                       {tab.contact.avatar ? (
-                        <img src={tab.contact.avatar} alt={tab.contact.name} className="w-6 h-6 rounded-full object-cover" />
+                        <img 
+                          src={tab.contact.avatar} 
+                          alt={tab.contact.name} 
+                          className="w-6 h-6 rounded-full object-cover"
+                        />
                       ) : (
                         <SafeIcon icon={tab.icon} className="w-5 h-5" />
                       )}
@@ -976,6 +987,7 @@ const ClaimDetails = () => {
                 <SafeIcon icon={FiFileText} className="w-6 h-6 text-primary" />
                 <h2 className="text-xl font-semibold text-gray-900">Documentos</h2>
               </div>
+
               {Object.keys(documents).length > 0 ? (
                 <div className="space-y-6">
                   {Object.keys(documents).map((category) => (
@@ -989,16 +1001,17 @@ const ClaimDetails = () => {
                               doc.status === 'rechazado'
                                 ? 'border-red-200 bg-red-50'
                                 : doc.status === 'aprobado'
-                                  ? 'border-green-200 bg-green-50'
-                                  : doc.status === 'pendiente'
-                                    ? 'border-orange-200 bg-orange-50'
-                                    : 'border-blue-200 bg-blue-50'
+                                ? 'border-green-200 bg-green-50'
+                                : doc.status === 'pendiente'
+                                ? 'border-orange-200 bg-orange-50'
+                                : 'border-blue-200 bg-blue-50'
                             }`}
                           >
                             <div className="flex items-center justify-between p-3">
                               <div className="flex items-center space-x-3 flex-1">
                                 {/* Previsualización del documento */}
                                 {renderDocumentPreview(doc)}
+                                
                                 <div className="flex-1">
                                   <div className="flex items-center space-x-2">
                                     <p className="text-sm font-medium text-gray-900">{doc.name}</p>
@@ -1007,6 +1020,7 @@ const ClaimDetails = () => {
                                   <p className="text-xs text-gray-500">{doc.type}</p>
                                 </div>
                               </div>
+                              
                               <div className="flex items-center space-x-2">
                                 {doc.status !== 'pendiente' && (
                                   <a
@@ -1018,7 +1032,7 @@ const ClaimDetails = () => {
                                     <SafeIcon icon={FiDownload} className="w-4 h-4" />
                                   </a>
                                 )}
-                                {(user?.role === 'admin' || user?.role === 'staff') && doc.status === 'recibido' && (
+                                {user?.role === 'admin' && doc.status === 'recibido' && (
                                   <>
                                     <button
                                       onClick={() => handleDocumentAction('approve', doc.id)}
@@ -1034,7 +1048,7 @@ const ClaimDetails = () => {
                                     </button>
                                   </>
                                 )}
-                                {user?.role !== 'admin' && user?.role !== 'staff' && doc.status === 'rechazado' && (
+                                {user?.role !== 'admin' && doc.status === 'rechazado' && (
                                   <button
                                     onClick={() => handleReupload(doc.id)}
                                     className="text-primary hover:text-primary-dark text-sm flex items-center space-x-1"
@@ -1088,117 +1102,115 @@ const ClaimDetails = () => {
             </div>
           </div>
 
-          {/* Panel Lateral con posición sticky */}
+          {/* Panel Lateral */}
           <div className="space-y-6">
-            <div className="sticky top-20">
-              {/* Cambiar Estatus (Solo Admin y Staff) */}
-              {canChangeStatus && (
-                <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 mb-6">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Cambiar Estatus</h3>
-                  <div className="space-y-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Nuevo estatus</label>
-                      <select
-                        value={newStatus}
-                        onChange={(e) => setNewStatus(e.target.value)}
-                        className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary"
-                      >
-                        <option value="">Seleccionar estatus</option>
-                        <option value="Pendiente">Pendiente</option>
-                        <option value="Verificado">Verificado</option>
-                        <option value="Enviado a Aseguradora">Enviado a Aseguradora</option>
-                        <option value="Archivado">Archivado</option>
-                      </select>
-                    </div>
-                    <button
-                      onClick={handleStatusChange}
-                      disabled={!newStatus}
-                      className="w-full bg-primary text-white px-4 py-2 rounded-md hover:bg-primary-dark transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      Actualizar Estatus
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {/* Resumen de Documentos */}
-              <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 mb-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Resumen de Documentos</h3>
+            {/* Cambiar Estatus (Solo Admin) */}
+            {user?.role === 'admin' && (
+              <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Cambiar Estatus</h3>
                 <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-2">
-                      <SafeIcon icon={FiCheck} className="w-4 h-4 text-green-500" />
-                      <span className="text-sm text-gray-700">Aprobados</span>
-                    </div>
-                    <span className="bg-green-100 text-green-800 text-xs font-medium px-2.5 py-0.5 rounded-full">
-                      {Object.values(documents).flat().filter(doc => doc.status === 'aprobado').length}
-                    </span>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Nuevo estatus</label>
+                    <select
+                      value={newStatus}
+                      onChange={(e) => setNewStatus(e.target.value)}
+                      className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary"
+                    >
+                      <option value="">Seleccionar estatus</option>
+                      <option value="Pendiente">Pendiente</option>
+                      <option value="Verificado">Verificado</option>
+                      <option value="Enviado a Aseguradora">Enviado a Aseguradora</option>
+                      <option value="Archivado">Archivado</option>
+                    </select>
                   </div>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-2">
-                      <SafeIcon icon={FiX} className="w-4 h-4 text-red-500" />
-                      <span className="text-sm text-gray-700">Rechazados</span>
-                    </div>
-                    <span className="bg-red-100 text-red-800 text-xs font-medium px-2.5 py-0.5 rounded-full">
-                      {Object.values(documents).flat().filter(doc => doc.status === 'rechazado').length}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-2">
-                      <SafeIcon icon={FiClock} className="w-4 h-4 text-blue-500" />
-                      <span className="text-sm text-gray-700">Por revisar</span>
-                    </div>
-                    <span className="bg-blue-100 text-blue-800 text-xs font-medium px-2.5 py-0.5 rounded-full">
-                      {Object.values(documents).flat().filter(doc => doc.status === 'recibido').length}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-2">
-                      <SafeIcon icon={FiAlertCircle} className="w-4 h-4 text-orange-500" />
-                      <span className="text-sm text-gray-700">Pendientes</span>
-                    </div>
-                    <span className="bg-orange-100 text-orange-800 text-xs font-medium px-2.5 py-0.5 rounded-full">
-                      {Object.values(documents).flat().filter(doc => doc.status === 'pendiente').length}
-                    </span>
-                  </div>
+                  <button
+                    onClick={handleStatusChange}
+                    disabled={!newStatus}
+                    className="w-full bg-primary text-white px-4 py-2 rounded-md hover:bg-primary-dark transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Actualizar Estatus
+                  </button>
                 </div>
               </div>
+            )}
 
-              {/* Historial de Actividad */}
-              <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Historial de Actividad</h3>
-                <div className="space-y-4 max-h-[400px] overflow-y-auto">
-                  {activityLog.map((activity, index) => (
-                    <div key={index} className="flex items-start space-x-3">
-                      <div className="flex-shrink-0">
-                        {activity.userAvatar ? (
-                          <img
-                            src={activity.userAvatar}
-                            alt={activity.userName}
-                            className="w-8 h-8 rounded-full object-cover"
-                          />
-                        ) : (
-                          <div className="w-8 h-8 flex items-center justify-center bg-gray-100 rounded-full">
-                            <SafeIcon icon={FiUser} className="w-4 h-4 text-gray-500" />
-                          </div>
-                        )}
-                      </div>
-                      <div className="flex-1">
-                        <p className="text-sm font-medium text-gray-900">{activity.description}</p>
-                        <div className="flex items-center space-x-2 mt-1">
-                          <p className="text-xs text-gray-500">{activity.timestamp}</p>
-                          <span className={`text-xs px-1.5 py-0.5 rounded-full ${
-                            activity.user === 'admin' || activity.user === 'staff'
-                              ? 'bg-purple-100 text-purple-800' 
-                              : 'bg-blue-100 text-blue-800'
-                          }`}>
-                            {activity.userName}
-                          </span>
+            {/* Resumen de Documentos */}
+            <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Resumen de Documentos</h3>
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
+                    <SafeIcon icon={FiCheck} className="w-4 h-4 text-green-500" />
+                    <span className="text-sm text-gray-700">Aprobados</span>
+                  </div>
+                  <span className="bg-green-100 text-green-800 text-xs font-medium px-2.5 py-0.5 rounded-full">
+                    {Object.values(documents).flat().filter(doc => doc.status === 'aprobado').length}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
+                    <SafeIcon icon={FiX} className="w-4 h-4 text-red-500" />
+                    <span className="text-sm text-gray-700">Rechazados</span>
+                  </div>
+                  <span className="bg-red-100 text-red-800 text-xs font-medium px-2.5 py-0.5 rounded-full">
+                    {Object.values(documents).flat().filter(doc => doc.status === 'rechazado').length}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
+                    <SafeIcon icon={FiClock} className="w-4 h-4 text-blue-500" />
+                    <span className="text-sm text-gray-700">Por revisar</span>
+                  </div>
+                  <span className="bg-blue-100 text-blue-800 text-xs font-medium px-2.5 py-0.5 rounded-full">
+                    {Object.values(documents).flat().filter(doc => doc.status === 'recibido').length}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
+                    <SafeIcon icon={FiAlertCircle} className="w-4 h-4 text-orange-500" />
+                    <span className="text-sm text-gray-700">Pendientes</span>
+                  </div>
+                  <span className="bg-orange-100 text-orange-800 text-xs font-medium px-2.5 py-0.5 rounded-full">
+                    {Object.values(documents).flat().filter(doc => doc.status === 'pendiente').length}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Historial de Actividad */}
+            <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Historial de Actividad</h3>
+              <div className="space-y-4">
+                {activityLog.map((activity, index) => (
+                  <div key={index} className="flex items-start space-x-3">
+                    <div className="flex-shrink-0">
+                      {activity.userAvatar ? (
+                        <img 
+                          src={activity.userAvatar} 
+                          alt={activity.userName} 
+                          className="w-8 h-8 rounded-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-8 h-8 flex items-center justify-center bg-gray-100 rounded-full">
+                          <SafeIcon icon={FiUser} className="w-4 h-4 text-gray-500" />
                         </div>
+                      )}
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-gray-900">{activity.description}</p>
+                      <div className="flex items-center space-x-2 mt-1">
+                        <p className="text-xs text-gray-500">{activity.timestamp}</p>
+                        <span className={`text-xs px-1.5 py-0.5 rounded-full ${
+                          activity.user === 'admin' 
+                            ? 'bg-purple-100 text-purple-800' 
+                            : 'bg-blue-100 text-blue-800'
+                        }`}>
+                          {activity.userName}
+                        </span>
                       </div>
                     </div>
-                  ))}
-                </div>
+                  </div>
+                ))}
               </div>
             </div>
           </div>
