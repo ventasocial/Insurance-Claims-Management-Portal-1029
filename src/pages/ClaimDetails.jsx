@@ -6,7 +6,7 @@ import { mockClaims } from '../data/mockData';
 import * as FiIcons from 'react-icons/fi';
 import SafeIcon from '../common/SafeIcon';
 
-const { FiArrowLeft, FiUser, FiMail, FiPhone, FiFileText, FiDownload, FiCheck, FiX, FiMessageSquare, FiUpload, FiAlertCircle, FiClock, FiEdit, FiUserCheck, FiUserPlus, FiSave, FiUsers, FiCreditCard, FiEye, FiShield, FiCalendar, FiTag, FiMapPin, FiClipboard, FiInfo, FiBuilding } = FiIcons;
+const { FiArrowLeft, FiUser, FiMail, FiPhone, FiFileText, FiDownload, FiCheck, FiX, FiMessageSquare, FiUpload, FiAlertCircle, FiClock, FiEdit, FiUserCheck, FiUserPlus, FiSave, FiUsers, FiCreditCard, FiEye, FiShield, FiCalendar, FiTag, FiMapPin, FiClipboard, FiInfo, FiBuilding, FiBell } = FiIcons;
 
 const ClaimDetails = () => {
   const { id } = useParams();
@@ -25,6 +25,7 @@ const ClaimDetails = () => {
   const [activityLog, setActivityLog] = useState([]);
   const [claimData, setClaimData] = useState(null);
   const [activeTab, setActiveTab] = useState('affected');
+  const isAdminOrStaff = user?.role === 'admin' || user?.role === 'staff';
 
   // Generamos un código de reclamo único de 4 caracteres alfanuméricos
   const generateClaimCode = () => {
@@ -300,7 +301,7 @@ const ClaimDetails = () => {
       <Layout title="Reclamo no encontrado">
         <div className="text-center py-12">
           <h2 className="text-2xl font-bold text-gray-900 mb-4">Reclamo no encontrado</h2>
-          <button 
+          <button
             onClick={() => navigate(user?.role === 'admin' ? '/admin' : '/dashboard')}
             className="text-primary hover:text-primary-dark"
           >
@@ -324,27 +325,32 @@ const ClaimDetails = () => {
 
   const getDocumentStatusBadge = (status) => {
     switch (status) {
-      case 'recibido': return (
-        <span className="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">
-          Recibido
-        </span>
-      );
-      case 'pendiente': return (
-        <span className="px-2 py-1 text-xs font-medium rounded-full bg-orange-100 text-orange-800">
-          Pendiente
-        </span>
-      );
-      case 'rechazado': return (
-        <span className="px-2 py-1 text-xs font-medium rounded-full bg-red-100 text-red-800">
-          Rechazado
-        </span>
-      );
-      case 'aprobado': return (
-        <span className="px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800">
-          Aprobado
-        </span>
-      );
-      default: return null;
+      case 'recibido':
+        return (
+          <span className="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">
+            Recibido
+          </span>
+        );
+      case 'pendiente':
+        return (
+          <span className="px-2 py-1 text-xs font-medium rounded-full bg-orange-100 text-orange-800">
+            Pendiente
+          </span>
+        );
+      case 'rechazado':
+        return (
+          <span className="px-2 py-1 text-xs font-medium rounded-full bg-red-100 text-red-800">
+            Rechazado
+          </span>
+        );
+      case 'aprobado':
+        return (
+          <span className="px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800">
+            Aprobado
+          </span>
+        );
+      default:
+        return null;
     }
   };
 
@@ -387,9 +393,8 @@ const ClaimDetails = () => {
               userName: user?.name || 'Administrador',
               userAvatar: user?.avatar || "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop&crop=face"
             };
-
-            return { 
-              ...doc, 
+            return {
+              ...doc,
               status: 'aprobado',
               comment: 'Documento aprobado',
               commentHistory: [...(doc.commentHistory || []), newHistoryEntry]
@@ -399,7 +404,6 @@ const ClaimDetails = () => {
         });
         documents[category] = updatedDocs;
       });
-
       setDocuments({ ...documents });
 
       // Añadir al historial de actividad
@@ -434,10 +438,9 @@ const ClaimDetails = () => {
             userName: user?.name || 'Administrador',
             userAvatar: user?.avatar || "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop&crop=face"
           };
-
-          return { 
-            ...doc, 
-            status: 'rechazado', 
+          return {
+            ...doc,
+            status: 'rechazado',
             comment: comment,
             commentHistory: [...(doc.commentHistory || []), newHistoryEntry]
           };
@@ -446,7 +449,6 @@ const ClaimDetails = () => {
       });
       documents[category] = updatedDocs;
     });
-
     setDocuments({ ...documents });
 
     // Añadir al historial de actividad
@@ -464,7 +466,6 @@ const ClaimDetails = () => {
     };
 
     setActivityLog([...activityLog, newActivity]);
-
     setComment('');
     setShowCommentModal(false);
     alert(`Documento rechazado con comentario registrado`);
@@ -505,7 +506,6 @@ const ClaimDetails = () => {
             userName: 'Sistema',
             userAvatar: null
           };
-
           return {
             ...doc,
             name: file.name,
@@ -518,7 +518,6 @@ const ClaimDetails = () => {
       });
       documents[category] = updatedDocs;
     });
-
     setDocuments({ ...documents });
 
     // Añadir al historial de actividad
@@ -532,7 +531,6 @@ const ClaimDetails = () => {
     };
 
     setActivityLog([...activityLog, newActivity]);
-
     setReuploadMode(null);
     alert(`Documento resubido exitosamente`);
   };
@@ -561,7 +559,7 @@ const ClaimDetails = () => {
   const handleSaveClaimNumber = () => {
     if (claimNumber.trim()) {
       alert(`Número de reclamo guardado: ${claimNumber}`);
-      
+
       // Añadir al historial de actividad
       const newActivity = {
         type: 'edit',
@@ -588,20 +586,24 @@ const ClaimDetails = () => {
     return (
       <div className="w-20 h-20 border border-gray-200 rounded-lg overflow-hidden bg-gray-50 flex-shrink-0">
         {isImage ? (
-          <img 
-            src={doc.url} 
+          <img
+            src={doc.url}
             alt={doc.name}
             className="w-full h-full object-cover cursor-pointer hover:opacity-80 transition-opacity"
             onClick={() => window.open(doc.url, '_blank')}
           />
         ) : isPdf ? (
-          <div className="w-full h-full flex items-center justify-center bg-red-50 cursor-pointer hover:bg-red-100 transition-colors"
-               onClick={() => window.open(doc.url, '_blank')}>
+          <div
+            className="w-full h-full flex items-center justify-center bg-red-50 cursor-pointer hover:bg-red-100 transition-colors"
+            onClick={() => window.open(doc.url, '_blank')}
+          >
             <SafeIcon icon={FiFileText} className="w-8 h-8 text-red-500" />
           </div>
         ) : (
-          <div className="w-full h-full flex items-center justify-center bg-gray-100 cursor-pointer hover:bg-gray-200 transition-colors"
-               onClick={() => window.open(doc.url, '_blank')}>
+          <div
+            className="w-full h-full flex items-center justify-center bg-gray-100 cursor-pointer hover:bg-gray-200 transition-colors"
+            onClick={() => window.open(doc.url, '_blank')}
+          >
             <SafeIcon icon={FiFileText} className="w-8 h-8 text-gray-400" />
           </div>
         )}
@@ -612,7 +614,7 @@ const ClaimDetails = () => {
   // Función para obtener los contactos disponibles para los tabs
   const getContactTabs = () => {
     const tabs = [];
-    
+
     if (claimData.contacts.affected) {
       tabs.push({
         key: 'affected',
@@ -622,7 +624,7 @@ const ClaimDetails = () => {
         color: 'blue'
       });
     }
-    
+
     if (claimData.contacts.policyholder) {
       tabs.push({
         key: 'policyholder',
@@ -632,7 +634,7 @@ const ClaimDetails = () => {
         color: 'green'
       });
     }
-    
+
     if (claimData.contacts.accountHolder && claimData.claimType === 'Reembolso') {
       tabs.push({
         key: 'accountHolder',
@@ -642,7 +644,7 @@ const ClaimDetails = () => {
         color: 'purple'
       });
     }
-    
+
     if (claimData.contacts.manager) {
       tabs.push({
         key: 'manager',
@@ -652,7 +654,7 @@ const ClaimDetails = () => {
         color: 'orange'
       });
     }
-    
+
     if (claimData.contacts.agents && claimData.contacts.agents.length > 0) {
       claimData.contacts.agents.forEach((agent, index) => {
         tabs.push({
@@ -664,7 +666,7 @@ const ClaimDetails = () => {
         });
       });
     }
-    
+
     return tabs;
   };
 
@@ -685,9 +687,9 @@ const ClaimDetails = () => {
         <div className="flex items-start space-x-4">
           <div className="flex-shrink-0">
             {contact.avatar ? (
-              <img 
-                src={contact.avatar} 
-                alt={contact.name} 
+              <img
+                src={contact.avatar}
+                alt={contact.name}
                 className="h-16 w-16 rounded-full object-cover"
               />
             ) : (
@@ -731,8 +733,8 @@ const ClaimDetails = () => {
                           'agent': 'Agente'
                         };
                         return (
-                          <span 
-                            key={role} 
+                          <span
+                            key={role}
                             className="px-2 py-0.5 text-xs bg-blue-100 text-blue-800 rounded-full"
                           >
                             {roleLabels[role] || role}
@@ -766,9 +768,9 @@ const ClaimDetails = () => {
             <div key={entry.id} className="flex items-start space-x-2 text-xs">
               <div className="flex-shrink-0">
                 {entry.userAvatar ? (
-                  <img 
-                    src={entry.userAvatar} 
-                    alt={entry.userName} 
+                  <img
+                    src={entry.userAvatar}
+                    alt={entry.userName}
                     className="w-6 h-6 rounded-full object-cover"
                   />
                 ) : (
@@ -780,11 +782,14 @@ const ClaimDetails = () => {
               <div className="flex-1 min-w-0">
                 <div className="flex items-center space-x-2 mb-1">
                   <span className="font-medium text-gray-700">{entry.userName}</span>
-                  <span className={`px-1.5 py-0.5 text-xs rounded-full ${
-                    entry.status === 'aprobado' ? 'bg-green-100 text-green-700' :
-                    entry.status === 'rechazado' ? 'bg-red-100 text-red-700' :
-                    'bg-blue-100 text-blue-700'
-                  }`}>
+                  <span
+                    className={`px-1.5 py-0.5 text-xs rounded-full ${entry.status === 'aprobado'
+                      ? 'bg-green-100 text-green-700'
+                      : entry.status === 'rechazado'
+                        ? 'bg-red-100 text-red-700'
+                        : 'bg-blue-100 text-blue-700'
+                      }`}
+                  >
                     {entry.status}
                   </span>
                   <span className="text-gray-500">
@@ -840,6 +845,7 @@ const ClaimDetails = () => {
                 <SafeIcon icon={FiClipboard} className="w-6 h-6 text-primary" />
                 <h2 className="text-xl font-semibold text-gray-900">Detalles del Reclamo</h2>
               </div>
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                 <div className="space-y-4">
                   <div className="flex items-center space-x-3">
@@ -857,6 +863,7 @@ const ClaimDetails = () => {
                     </div>
                   </div>
                 </div>
+
                 <div className="space-y-4">
                   <div className="flex items-center space-x-3">
                     <SafeIcon icon={FiBuilding} className="w-5 h-5 text-gray-500" />
@@ -874,7 +881,7 @@ const ClaimDetails = () => {
                   </div>
                 </div>
               </div>
-              
+
               <div className="border-t border-gray-200 pt-4">
                 <div className="flex items-center space-x-3 mb-3">
                   <SafeIcon icon={FiCalendar} className="w-5 h-5 text-gray-500" />
@@ -883,7 +890,7 @@ const ClaimDetails = () => {
                     <p className="text-base text-gray-900">{claimData.date}</p>
                   </div>
                 </div>
-                
+
                 <div className="flex items-start space-x-3">
                   <SafeIcon icon={FiInfo} className="w-5 h-5 text-gray-500 mt-0.5" />
                   <div>
@@ -920,7 +927,7 @@ const ClaimDetails = () => {
                   </div>
                 </div>
               </div>
-              
+
               {claimData.description && (
                 <div className="border-t border-gray-200 pt-4 mt-4">
                   <div className="flex items-start space-x-3">
@@ -940,7 +947,7 @@ const ClaimDetails = () => {
                 <SafeIcon icon={FiUsers} className="w-6 h-6 text-primary" />
                 <h2 className="text-xl font-semibold text-gray-900">Personas Involucradas</h2>
               </div>
-              
+
               {/* Tabs */}
               <div className="border-b border-gray-200 mb-6">
                 <nav className="-mb-px flex space-x-8 overflow-x-auto">
@@ -948,16 +955,15 @@ const ClaimDetails = () => {
                     <button
                       key={tab.key}
                       onClick={() => setActiveTab(tab.key)}
-                      className={`whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm flex items-center space-x-2 ${
-                        activeTab === tab.key
-                          ? 'border-primary text-primary'
-                          : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                      }`}
+                      className={`whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm flex items-center space-x-2 ${activeTab === tab.key
+                        ? 'border-primary text-primary'
+                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                        }`}
                     >
                       {tab.contact.avatar ? (
-                        <img 
-                          src={tab.contact.avatar} 
-                          alt={tab.contact.name} 
+                        <img
+                          src={tab.contact.avatar}
+                          alt={tab.contact.name}
                           className="w-6 h-6 rounded-full object-cover"
                         />
                       ) : (
@@ -997,21 +1003,20 @@ const ClaimDetails = () => {
                         {documents[category].map((doc) => (
                           <div
                             key={doc.id}
-                            className={`border rounded-md ${
-                              doc.status === 'rechazado'
-                                ? 'border-red-200 bg-red-50'
-                                : doc.status === 'aprobado'
+                            className={`border rounded-md ${doc.status === 'rechazado'
+                              ? 'border-red-200 bg-red-50'
+                              : doc.status === 'aprobado'
                                 ? 'border-green-200 bg-green-50'
                                 : doc.status === 'pendiente'
-                                ? 'border-orange-200 bg-orange-50'
-                                : 'border-blue-200 bg-blue-50'
-                            }`}
+                                  ? 'border-orange-200 bg-orange-50'
+                                  : 'border-blue-200 bg-blue-50'
+                              }`}
                           >
                             <div className="flex items-center justify-between p-3">
                               <div className="flex items-center space-x-3 flex-1">
                                 {/* Previsualización del documento */}
                                 {renderDocumentPreview(doc)}
-                                
+
                                 <div className="flex-1">
                                   <div className="flex items-center space-x-2">
                                     <p className="text-sm font-medium text-gray-900">{doc.name}</p>
@@ -1020,7 +1025,7 @@ const ClaimDetails = () => {
                                   <p className="text-xs text-gray-500">{doc.type}</p>
                                 </div>
                               </div>
-                              
+
                               <div className="flex items-center space-x-2">
                                 {doc.status !== 'pendiente' && (
                                   <a
@@ -1032,6 +1037,7 @@ const ClaimDetails = () => {
                                     <SafeIcon icon={FiDownload} className="w-4 h-4" />
                                   </a>
                                 )}
+
                                 {user?.role === 'admin' && doc.status === 'recibido' && (
                                   <>
                                     <button
@@ -1048,6 +1054,7 @@ const ClaimDetails = () => {
                                     </button>
                                   </>
                                 )}
+
                                 {user?.role !== 'admin' && doc.status === 'rechazado' && (
                                   <button
                                     onClick={() => handleReupload(doc.id)}
@@ -1103,9 +1110,9 @@ const ClaimDetails = () => {
           </div>
 
           {/* Panel Lateral */}
-          <div className="space-y-6">
-            {/* Cambiar Estatus (Solo Admin) */}
-            {user?.role === 'admin' && (
+          <div className="space-y-6 lg:sticky lg:top-8 self-start">
+            {/* Cambiar Estatus (Solo Admin o Staff) */}
+            {isAdminOrStaff && (
               <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
                 <h3 className="text-lg font-semibold text-gray-900 mb-4">Cambiar Estatus</h3>
                 <div className="space-y-4">
@@ -1130,6 +1137,10 @@ const ClaimDetails = () => {
                   >
                     Actualizar Estatus
                   </button>
+                  <div className="flex items-center space-x-2 mt-2 text-xs text-gray-600 bg-blue-50 p-2 rounded-md">
+                    <SafeIcon icon={FiBell} className="w-4 h-4 text-blue-500" />
+                    <p>Notificaremos a las Personas Involucradas del Cambio de Estatus</p>
+                  </div>
                 </div>
               </div>
             )}
@@ -1185,9 +1196,9 @@ const ClaimDetails = () => {
                   <div key={index} className="flex items-start space-x-3">
                     <div className="flex-shrink-0">
                       {activity.userAvatar ? (
-                        <img 
-                          src={activity.userAvatar} 
-                          alt={activity.userName} 
+                        <img
+                          src={activity.userAvatar}
+                          alt={activity.userName}
                           className="w-8 h-8 rounded-full object-cover"
                         />
                       ) : (
@@ -1200,11 +1211,12 @@ const ClaimDetails = () => {
                       <p className="text-sm font-medium text-gray-900">{activity.description}</p>
                       <div className="flex items-center space-x-2 mt-1">
                         <p className="text-xs text-gray-500">{activity.timestamp}</p>
-                        <span className={`text-xs px-1.5 py-0.5 rounded-full ${
-                          activity.user === 'admin' 
-                            ? 'bg-purple-100 text-purple-800' 
+                        <span
+                          className={`text-xs px-1.5 py-0.5 rounded-full ${activity.user === 'admin'
+                            ? 'bg-purple-100 text-purple-800'
                             : 'bg-blue-100 text-blue-800'
-                        }`}>
+                            }`}
+                        >
                           {activity.userName}
                         </span>
                       </div>

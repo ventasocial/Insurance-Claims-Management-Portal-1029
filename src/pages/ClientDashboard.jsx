@@ -89,34 +89,23 @@ const ClientDashboard = () => {
   };
 
   const filteredClaims = mockClaims.filter(claim => {
-    const matchesKeyword = filters.keyword
-      ? (
-          claim.customerName.toLowerCase().includes(filters.keyword.toLowerCase()) ||
-          claim.policyNumber.toLowerCase().includes(filters.keyword.toLowerCase()) ||
-          claim.serviceType.toLowerCase().includes(filters.keyword.toLowerCase())
-        )
-      : true;
+    const matchesKeyword = filters.keyword ? (
+      claim.customerName.toLowerCase().includes(filters.keyword.toLowerCase()) ||
+      claim.policyNumber.toLowerCase().includes(filters.keyword.toLowerCase()) ||
+      claim.serviceType.toLowerCase().includes(filters.keyword.toLowerCase())
+    ) : true;
 
-    const matchesStatus = filters.status.value
-      ? (
-          filters.status.include
-            ? claim.status === filters.status.value
-            : claim.status !== filters.status.value
-        )
-      : true;
+    const matchesStatus = filters.status.value ? (
+      filters.status.include ? claim.status === filters.status.value : claim.status !== filters.status.value
+    ) : true;
 
-    const matchesType = filters.type.value
-      ? (
-          filters.type.include
-            ? claim.claimType === filters.type.value
-            : claim.claimType !== filters.type.value
-        )
-      : true;
+    const matchesType = filters.type.value ? (
+      filters.type.include ? claim.claimType === filters.type.value : claim.claimType !== filters.type.value
+    ) : true;
 
     const claimDate = new Date(claim.date);
     const dateFrom = filters.dateFrom ? new Date(filters.dateFrom) : null;
     const dateTo = filters.dateTo ? new Date(filters.dateTo) : null;
-
     const matchesDateRange = (!dateFrom || claimDate >= dateFrom) && (!dateTo || claimDate <= dateTo);
 
     return matchesKeyword && matchesStatus && matchesType && matchesDateRange;
@@ -137,7 +126,6 @@ const ClientDashboard = () => {
 
   const handleCreateComplement = (claim) => {
     const claimCode = generateClaimCode();
-    
     // Navegar a crear reclamo con datos pre-cargados incluyendo todos los campos solicitados
     navigate('/crear-reclamo', {
       state: {
@@ -146,7 +134,7 @@ const ClientDashboard = () => {
           customerEmail: claim.customerEmail,
           customerWhatsApp: claim.customerWhatsApp,
           policyNumber: claim.policyNumber,
-          insurance: claim.insurance,
+          insurance: claim.insurance || "GNP", // Aseguramos que se pase el valor de la aseguradora
           claimType: claim.claimType, // Copia el tipo de reclamo original
           claimInitialType: 'Complemento', // Fuerza el tipo de siniestro a Complemento
           previousClaimNumber: `REC-${claimCode}` // Simular número de reclamo de aseguradora
@@ -198,9 +186,11 @@ const ClientDashboard = () => {
                 {filteredClaims.map((claim) => {
                   const claimCode = generateClaimCode();
                   const involvedPeople = getInvolvedPeople(claim);
-
                   return (
-                    <div key={claim.id} className="bg-white border border-gray-200 rounded-xl shadow-sm hover:shadow-md transition-shadow relative overflow-hidden">
+                    <div
+                      key={claim.id}
+                      className="bg-white border border-gray-200 rounded-xl shadow-sm hover:shadow-md transition-shadow relative overflow-hidden"
+                    >
                       {/* Header de la tarjeta con estatus */}
                       <div className="p-6 pb-4">
                         <div className="flex items-start justify-between mb-4">
@@ -222,25 +212,21 @@ const ClientDashboard = () => {
                             <span className="text-gray-600">Tipo:</span>
                             <span className="font-medium text-gray-900">{getClaimTypeDisplay(claim)}</span>
                           </div>
-                          
                           <div className="flex items-center space-x-2 text-sm">
                             <SafeIcon icon={FiUser} className="w-4 h-4 text-gray-500" />
                             <span className="text-gray-600">Asegurado:</span>
                             <span className="font-medium text-gray-900">{claim.customerName}</span>
                           </div>
-
                           <div className="flex items-center space-x-2 text-sm">
                             <SafeIcon icon={FiClock} className="w-4 h-4 text-gray-500" />
                             <span className="text-gray-600">Fecha:</span>
                             <span className="font-medium text-gray-900">{claim.date}</span>
                           </div>
-
                           <div className="flex items-center space-x-2 text-sm">
                             <SafeIcon icon={FiMapPin} className="w-4 h-4 text-gray-500" />
                             <span className="text-gray-600">Servicio:</span>
                             <span className="font-medium text-gray-900">{claim.serviceType}</span>
                           </div>
-
                           <div className="flex items-center space-x-2 text-sm">
                             <SafeIcon icon={FiFileText} className="w-4 h-4 text-gray-500" />
                             <span className="text-gray-600">Póliza:</span>
@@ -255,13 +241,16 @@ const ClientDashboard = () => {
                         <div className="flex flex-wrap gap-2">
                           {involvedPeople.map((person, index) => (
                             <div key={index} className="flex items-center bg-white rounded-full px-3 py-2 text-xs border border-gray-200">
-                              <img 
-                                src={person.avatar} 
-                                alt={person.name} 
+                              <img
+                                src={person.avatar}
+                                alt={person.name}
                                 className="w-5 h-5 rounded-full object-cover mr-2"
                               />
                               <div className="flex flex-col">
-                                <span className="font-medium text-gray-900 truncate max-w-[100px]" title={person.name}>
+                                <span
+                                  className="font-medium text-gray-900 truncate max-w-[100px]"
+                                  title={person.name}
+                                >
                                   {person.name}
                                 </span>
                                 <span className="text-gray-500 text-[10px]">
