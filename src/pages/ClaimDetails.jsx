@@ -1180,9 +1180,9 @@ const ClaimDetails = () => {
     const idDocs = identificationDocs[currentRole] || [];
 
     return (
-      <div className={`p-6 rounded-lg ${colorClasses[color] || colorClasses.blue}`}>
-        <div className="flex items-start space-x-4">
-          <div className="flex-shrink-0">
+      <div className={`p-4 md:p-6 rounded-lg ${colorClasses[color] || colorClasses.blue}`}>
+        <div className="flex flex-col md:flex-row md:items-start space-y-4 md:space-y-0 md:space-x-4">
+          <div className="flex-shrink-0 flex justify-center">
             {contact.avatar ? (
               <img
                 src={contact.avatar}
@@ -1318,7 +1318,7 @@ const ClaimDetails = () => {
                 {idDocs.map((doc) => (
                   <div 
                     key={doc.id} 
-                    className={`flex items-center justify-between p-2 rounded-md ${
+                    className={`flex flex-col sm:flex-row sm:items-center sm:justify-between p-2 rounded-md ${
                       doc.status === 'rechazado' 
                         ? 'border border-red-200 bg-red-50' 
                         : doc.status === 'aprobado' 
@@ -1326,18 +1326,18 @@ const ClaimDetails = () => {
                         : 'border border-blue-200 bg-blue-50'
                     }`}
                   >
-                    <div className="flex items-center space-x-3 flex-1">
+                    <div className="flex items-center space-x-3 flex-1 mb-2 sm:mb-0">
                       {renderDocumentPreview(doc)}
                       <div className="flex-1">
-                        <div className="flex items-center space-x-2">
-                          <p className="text-sm font-medium text-gray-900">{doc.name}</p>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <p className="text-sm font-medium text-gray-900 break-all">{doc.name}</p>
                           {getDocumentStatusBadge(doc.status)}
                         </div>
                         <p className="text-xs text-gray-500">{formatFileSize(doc.size || 0)}</p>
                       </div>
                     </div>
                     
-                    <div className="flex items-center space-x-2">
+                    <div className="flex items-center space-x-2 justify-end">
                       {doc.status !== 'pendiente' && (
                         <button
                           onClick={() => openDocumentPreview(doc)}
@@ -1428,7 +1428,7 @@ const ClaimDetails = () => {
                 )}
               </div>
               <div className="flex-1 min-w-0">
-                <div className="flex items-center space-x-2 mb-1">
+                <div className="flex flex-wrap items-center gap-2 mb-1">
                   <span className="font-medium text-gray-700">{entry.userName}</span>
                   <span
                     className={`px-1.5 py-0.5 text-xs rounded-full ${
@@ -1467,10 +1467,10 @@ const ClaimDetails = () => {
 
   return (
     <Layout title={`Reclamo - ${claimCode}`}>
-      <div className="max-w-6xl mx-auto space-y-6">
+      <div className="max-w-6xl mx-auto space-y-4 md:space-y-6">
         {/* Header con botón de edición sticky */}
-        <div className="flex items-center justify-between sticky top-0 z-30 bg-gray-50 py-2 mb-4 shadow-sm">
-          <div className="flex items-center space-x-4">
+        <div className="flex flex-col sm:flex-row items-center justify-between sticky top-0 z-30 bg-gray-50 py-2 px-2 sm:px-4 mb-4 shadow-sm">
+          <div className="flex items-center space-x-4 mb-2 sm:mb-0">
             <button
               onClick={() => navigate(user?.role === 'admin' ? '/admin' : '/dashboard')}
               className="flex items-center space-x-2 text-gray-600 hover:text-primary transition-colors"
@@ -1479,12 +1479,12 @@ const ClaimDetails = () => {
               <span className="text-sm font-medium">Volver</span>
             </button>
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">Reclamo - {claimCode}</h1>
+              <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Reclamo - {claimCode}</h1>
               <div className="flex items-center space-x-3 mt-1">
-                <span className={`px-2 py-1 text-sm font-medium rounded-full ${getStatusColor(claimData.status)}`}>
+                <span className={`px-2 py-1 text-xs sm:text-sm font-medium rounded-full ${getStatusColor(claimData.status)}`}>
                   {claimData.status}
                 </span>
-                <span className="text-sm text-gray-600">Creado el {claim.date}</span>
+                <span className="text-xs sm:text-sm text-gray-600">Creado el {claim.date}</span>
               </div>
             </div>
           </div>
@@ -1495,85 +1495,87 @@ const ClaimDetails = () => {
               {!isEditing ? (
                 <button
                   onClick={() => setIsEditing(true)}
-                  className="flex items-center space-x-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+                  className="flex items-center space-x-2 bg-blue-600 text-white px-3 sm:px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
                 >
-                  <SafeIcon icon={FiEdit} className="w-5 h-5" />
-                  <span>Editar Reclamo</span>
+                  <SafeIcon icon={FiEdit} className="w-4 sm:w-5 h-4 sm:h-5" />
+                  <span className="text-sm sm:text-base">Editar Reclamo</span>
                 </button>
               ) : (
                 <button
                   onClick={() => setIsEditing(false)}
-                  className="flex items-center space-x-2 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors"
+                  className="flex items-center space-x-2 bg-green-600 text-white px-3 sm:px-4 py-2 rounded-lg hover:bg-green-700 transition-colors"
                 >
-                  <SafeIcon icon={FiCheck} className="w-5 h-5" />
-                  <span>Finalizar Edición</span>
+                  <SafeIcon icon={FiCheck} className="w-4 sm:w-5 h-4 sm:h-5" />
+                  <span className="text-sm sm:text-base">Finalizar Edición</span>
                 </button>
               )}
             </div>
           )}
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
           {/* Información Principal */}
-          <div className="lg:col-span-2 space-y-6">
+          <div className="lg:col-span-2 space-y-4 md:space-y-6">
             {/* Información del Reclamo - Movido arriba con iconos */}
-            <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-              <div className="flex items-center space-x-2 mb-6">
-                <SafeIcon icon={FiClipboard} className="w-6 h-6 text-primary" />
-                <h2 className="text-xl font-semibold text-gray-900">Detalles del Reclamo</h2>
+            <div className="bg-white p-4 md:p-6 rounded-lg shadow-sm border border-gray-200">
+              <div className="flex items-center space-x-2 mb-4 md:mb-6">
+                <SafeIcon icon={FiClipboard} className="w-5 sm:w-6 h-5 sm:h-6 text-primary" />
+                <h2 className="text-lg sm:text-xl font-semibold text-gray-900">Detalles del Reclamo</h2>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                <div className="space-y-4">
-                  <div className="flex items-center space-x-3">
-                    <SafeIcon icon={FiTag} className="w-5 h-5 text-gray-500" />
-                    <div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 mb-4 md:mb-6">
+                <div className="space-y-3 md:space-y-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-3">
+                    <div className="flex items-center mb-1 sm:mb-0">
+                      <SafeIcon icon={FiTag} className="w-4 sm:w-5 h-4 sm:h-5 text-gray-500 mr-2" />
                       <span className="text-sm font-medium text-gray-700">Tipo de reclamo:</span>
-                      <p className="text-base text-gray-900">{claimData.claimType}</p>
                     </div>
+                    <p className="text-sm md:text-base text-gray-900">{claimData.claimType}</p>
                   </div>
 
-                  <div className="flex items-center space-x-3">
-                    <SafeIcon icon={FiMapPin} className="w-5 h-5 text-gray-500" />
-                    <div>
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-3">
+                    <div className="flex items-center mb-1 sm:mb-0">
+                      <SafeIcon icon={FiMapPin} className="w-4 sm:w-5 h-4 sm:h-5 text-gray-500 mr-2" />
                       <span className="text-sm font-medium text-gray-700">Tipo de servicio:</span>
-                      <p className="text-base text-gray-900">{claimData.serviceType}</p>
                     </div>
+                    <p className="text-sm md:text-base text-gray-900">{claimData.serviceType}</p>
                   </div>
                 </div>
 
-                <div className="space-y-4">
-                  <div className="flex items-center space-x-3">
-                    <SafeIcon icon={FiBuilding} className="w-5 h-5 text-gray-500" />
-                    <div>
+                <div className="space-y-3 md:space-y-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-3">
+                    <div className="flex items-center mb-1 sm:mb-0">
+                      <SafeIcon icon={FiBuilding} className="w-4 sm:w-5 h-4 sm:h-5 text-gray-500 mr-2" />
                       <span className="text-sm font-medium text-gray-700">Aseguradora:</span>
-                      <p className="text-base text-gray-900">{claimData.insurance}</p>
                     </div>
+                    <p className="text-sm md:text-base text-gray-900">{claimData.insurance}</p>
                   </div>
 
-                  <div className="flex items-center space-x-3">
-                    <SafeIcon icon={FiShield} className="w-5 h-5 text-gray-500" />
-                    <div>
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-3">
+                    <div className="flex items-center mb-1 sm:mb-0">
+                      <SafeIcon icon={FiShield} className="w-4 sm:w-5 h-4 sm:h-5 text-gray-500 mr-2" />
                       <span className="text-sm font-medium text-gray-700">Póliza:</span>
-                      <p className="text-base text-gray-900">{claimData.policyNumber}</p>
                     </div>
+                    <p className="text-sm md:text-base text-gray-900">{claimData.policyNumber}</p>
                   </div>
                 </div>
               </div>
 
               <div className="border-t border-gray-200 pt-4">
-                <div className="flex items-center space-x-3 mb-3">
-                  <SafeIcon icon={FiCalendar} className="w-5 h-5 text-gray-500" />
-                  <div>
+                <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-3 mb-3">
+                  <div className="flex items-center mb-1 sm:mb-0">
+                    <SafeIcon icon={FiCalendar} className="w-4 sm:w-5 h-4 sm:h-5 text-gray-500 mr-2" />
                     <span className="text-sm font-medium text-gray-700">Fecha de creación:</span>
-                    <p className="text-base text-gray-900">{claimData.date}</p>
                   </div>
+                  <p className="text-sm md:text-base text-gray-900">{claimData.date}</p>
                 </div>
 
-                <div className="flex items-start space-x-3">
-                  <SafeIcon icon={FiInfo} className="w-5 h-5 text-gray-500 mt-0.5" />
-                  <div>
+                <div className="flex flex-col sm:flex-row sm:items-start sm:space-x-3">
+                  <div className="flex items-center mb-1 sm:mb-0">
+                    <SafeIcon icon={FiInfo} className="w-4 sm:w-5 h-4 sm:h-5 text-gray-500 mr-2 mt-0.5" />
                     <span className="text-sm font-medium text-gray-700">Número de reclamo:</span>
+                  </div>
+                  <div className="flex-1">
                     {isEditingClaimNumber ? (
                       <div className="flex items-center mt-1">
                         <input
@@ -1592,7 +1594,7 @@ const ClaimDetails = () => {
                       </div>
                     ) : (
                       <div className="flex items-center">
-                        <p className="text-base text-gray-900">{claimNumber || "No asignado"}</p>
+                        <p className="text-sm md:text-base text-gray-900">{claimNumber || "No asignado"}</p>
                         {user?.role === 'admin' && (
                           <button
                             onClick={() => setIsEditingClaimNumber(true)}
@@ -1609,71 +1611,71 @@ const ClaimDetails = () => {
 
               {/* Descripción con opción de edición */}
               <div className="border-t border-gray-200 pt-4 mt-4">
-                <div className="flex items-start space-x-3">
-                  <SafeIcon icon={FiMessageSquare} className="w-5 h-5 text-gray-500 mt-0.5" />
-                  <div className="flex-1">
-                    <div className="flex items-center justify-between mb-2">
+                <div className="flex flex-col space-y-2">
+                  <div className="flex items-center justify-between mb-1">
+                    <div className="flex items-center">
+                      <SafeIcon icon={FiMessageSquare} className="w-4 sm:w-5 h-4 sm:h-5 text-gray-500 mr-2" />
                       <span className="text-sm font-medium text-gray-700">Descripción:</span>
-                      
-                      {canEditDescription() && !editingDescription && isEditing && (
-                        <button 
-                          onClick={() => setEditingDescription(true)}
-                          className="text-blue-600 hover:text-blue-800 text-sm flex items-center"
-                        >
-                          <SafeIcon icon={FiEdit} className="w-4 h-4 mr-1" />
-                          Editar
-                        </button>
-                      )}
                     </div>
                     
-                    {editingDescription ? (
-                      <div>
-                        <textarea
-                          value={newDescription}
-                          onChange={(e) => setNewDescription(e.target.value)}
-                          rows={4}
-                          className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary"
-                          placeholder="Descripción del reclamo"
-                        />
-                        <div className="flex justify-end mt-2 space-x-2">
-                          <button
-                            onClick={() => {
-                              setEditingDescription(false);
-                              setNewDescription(claimData.description);
-                            }}
-                            className="px-3 py-1 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-colors"
-                          >
-                            Cancelar
-                          </button>
-                          <button
-                            onClick={handleSaveDescription}
-                            className="px-3 py-1 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
-                          >
-                            Guardar
-                          </button>
-                        </div>
-                      </div>
-                    ) : (
-                      <p className="text-base text-gray-900 mt-1">{claimData.description}</p>
+                    {canEditDescription() && !editingDescription && isEditing && (
+                      <button 
+                        onClick={() => setEditingDescription(true)}
+                        className="text-blue-600 hover:text-blue-800 text-sm flex items-center"
+                      >
+                        <SafeIcon icon={FiEdit} className="w-4 h-4 mr-1" />
+                        Editar
+                      </button>
                     )}
                   </div>
+                  
+                  {editingDescription ? (
+                    <div>
+                      <textarea
+                        value={newDescription}
+                        onChange={(e) => setNewDescription(e.target.value)}
+                        rows={4}
+                        className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary"
+                        placeholder="Descripción del reclamo"
+                      />
+                      <div className="flex justify-end mt-2 space-x-2">
+                        <button
+                          onClick={() => {
+                            setEditingDescription(false);
+                            setNewDescription(claimData.description);
+                          }}
+                          className="px-3 py-1 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-colors"
+                        >
+                          Cancelar
+                        </button>
+                        <button
+                          onClick={handleSaveDescription}
+                          className="px-3 py-1 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+                        >
+                          Guardar
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="text-sm md:text-base text-gray-900">{claimData.description}</p>
+                  )}
                 </div>
               </div>
             </div>
 
             {/* Información de Contactos con Tabs */}
-            <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-              <div className="flex items-center justify-between mb-6">
-                <div className="flex items-center space-x-2">
-                  <SafeIcon icon={FiUsers} className="w-6 h-6 text-primary" />
-                  <h2 className="text-xl font-semibold text-gray-900">Personas Involucradas</h2>
+            <div className="bg-white p-4 md:p-6 rounded-lg shadow-sm border border-gray-200">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 md:mb-6">
+                <div className="flex items-center space-x-2 mb-2 sm:mb-0">
+                  <SafeIcon icon={FiUsers} className="w-5 sm:w-6 h-5 sm:h-6 text-primary" />
+                  <h2 className="text-lg sm:text-xl font-semibold text-gray-900">Personas Involucradas</h2>
                 </div>
                 
                 {/* Botón para crear nuevo contacto en modo edición */}
                 {isEditing && canChangeInvolvedPeople() && (
                   <button
                     onClick={() => handleCreateNewContact(activeTab.includes('agent-') ? 'agent' : activeTab)}
-                    className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors"
+                    className="flex items-center space-x-2 px-3 md:px-4 py-1.5 md:py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors text-sm"
                   >
                     <SafeIcon icon={FiUserPlus} className="w-4 h-4" />
                     <span>Nuevo {getRoleLabel(activeTab.includes('agent-') ? 'agent' : activeTab)}</span>
@@ -1681,14 +1683,14 @@ const ClaimDetails = () => {
                 )}
               </div>
 
-              {/* Tabs - Optimizado para mostrar los 5 roles sin scroll horizontal */}
-              <div className="border-b border-gray-200 mb-6">
-                <nav className="-mb-px flex flex-wrap space-x-4">
+              {/* Tabs - Optimizado para dispositivos móviles */}
+              <div className="border-b border-gray-200 mb-4 md:mb-6 overflow-x-auto pb-1">
+                <nav className="-mb-px flex space-x-2 md:space-x-4">
                   {contactTabs.map((tab) => (
                     <button
                       key={tab.key}
                       onClick={() => setActiveTab(tab.key)}
-                      className={`whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm flex items-center space-x-1 ${
+                      className={`whitespace-nowrap py-2 px-2 border-b-2 font-medium text-xs sm:text-sm flex items-center space-x-1 ${
                         activeTab === tab.key
                           ? 'border-primary text-primary'
                           : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
@@ -1698,19 +1700,19 @@ const ClaimDetails = () => {
                         <img
                           src={tab.contact.avatar}
                           alt={tab.contact.name}
-                          className="w-5 h-5 rounded-full object-cover"
+                          className="w-4 h-4 rounded-full object-cover"
                         />
                       ) : (
-                        <SafeIcon icon={tab.icon} className="w-4 h-4" />
+                        <SafeIcon icon={tab.icon} className="w-3 h-3 sm:w-4 sm:h-4" />
                       )}
-                      <span>{tab.label}</span>
+                      <span className="truncate max-w-[80px] sm:max-w-none">{tab.label}</span>
                     </button>
                   ))}
                 </nav>
               </div>
 
               {/* Contenido del Tab Activo */}
-              <div className="mt-6">
+              <div className="mt-4 md:mt-6">
                 {contactTabs.map((tab) => (
                   activeTab === tab.key && (
                     <div key={tab.key}>
@@ -1722,11 +1724,11 @@ const ClaimDetails = () => {
             </div>
 
             {/* Documentos */}
-            <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-              <div className="flex items-center justify-between mb-6">
+            <div className="bg-white p-4 md:p-6 rounded-lg shadow-sm border border-gray-200">
+              <div className="flex items-center justify-between mb-4 md:mb-6">
                 <div className="flex items-center space-x-2">
-                  <SafeIcon icon={FiFileText} className="w-6 h-6 text-primary" />
-                  <h2 className="text-xl font-semibold text-gray-900">Documentos</h2>
+                  <SafeIcon icon={FiFileText} className="w-5 sm:w-6 h-5 sm:h-6 text-primary" />
+                  <h2 className="text-lg sm:text-xl font-semibold text-gray-900">Documentos</h2>
                 </div>
               </div>
 
@@ -1743,7 +1745,7 @@ const ClaimDetails = () => {
                     
                     return (
                       <div key={category} className="space-y-3">
-                        <h3 className="text-lg font-medium text-gray-800">{category}</h3>
+                        <h3 className="text-base md:text-lg font-medium text-gray-800">{category}</h3>
                         <div className="space-y-4">
                           {filteredDocs.map((doc) => (
                             <div
@@ -1758,14 +1760,14 @@ const ClaimDetails = () => {
                                   : 'border-blue-200 bg-blue-50'
                               }`}
                             >
-                              <div className="flex items-center justify-between p-3">
-                                <div className="flex items-center space-x-3 flex-1">
+                              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-3">
+                                <div className="flex items-center space-x-3 flex-1 mb-2 sm:mb-0">
                                   {/* Previsualización del documento */}
                                   {renderDocumentPreview(doc)}
 
                                   <div className="flex-1">
-                                    <div className="flex items-center space-x-2">
-                                      <p className="text-sm font-medium text-gray-900">{doc.name}</p>
+                                    <div className="flex flex-wrap items-center gap-2">
+                                      <p className="text-sm font-medium text-gray-900 break-all">{doc.name}</p>
                                       {getDocumentStatusBadge(doc.status)}
                                     </div>
                                     <p className="text-xs text-gray-500">{doc.type}</p>
@@ -1794,7 +1796,7 @@ const ClaimDetails = () => {
                                   </div>
                                 </div>
 
-                                <div className="flex items-center space-x-2">
+                                <div className="flex items-center space-x-2 justify-end">
                                   {doc.status !== 'pendiente' && (
                                     <button
                                       onClick={() => openDocumentPreview(doc)}
@@ -1877,8 +1879,8 @@ const ClaimDetails = () => {
                   })}
                 </div>
               ) : (
-                <div className="text-center py-8">
-                  <SafeIcon icon={FiAlertCircle} className="mx-auto h-12 w-12 text-gray-400" />
+                <div className="text-center py-6 md:py-8">
+                  <SafeIcon icon={FiAlertCircle} className="mx-auto h-10 md:h-12 w-10 md:w-12 text-gray-400" />
                   <h3 className="mt-2 text-sm font-medium text-gray-900">No hay documentos</h3>
                   <p className="mt-1 text-sm text-gray-500">
                     No se han encontrado documentos para este reclamo.
@@ -1889,11 +1891,11 @@ const ClaimDetails = () => {
           </div>
 
           {/* Panel Lateral */}
-          <div className="space-y-6 lg:sticky lg:top-20 self-start">
+          <div className="space-y-4 md:space-y-6 lg:sticky lg:top-20 self-start">
             {/* Cambiar Estatus (Solo Admin o Staff) */}
             {isAdminOrStaff && (
-              <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Cambiar Estatus</h3>
+              <div className="bg-white p-4 md:p-6 rounded-lg shadow-sm border border-gray-200">
+                <h3 className="text-base md:text-lg font-semibold text-gray-900 mb-4">Cambiar Estatus</h3>
                 <div className="space-y-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -1922,7 +1924,7 @@ const ClaimDetails = () => {
                   </button>
 
                   <div className="flex items-center space-x-2 mt-2 text-xs text-gray-600 bg-blue-50 p-2 rounded-md">
-                    <SafeIcon icon={FiBell} className="w-4 h-4 text-blue-500" />
+                    <SafeIcon icon={FiBell} className="w-4 h-4 text-blue-500 flex-shrink-0" />
                     <p>Notificaremos a las Personas Involucradas del Cambio de Estatus</p>
                   </div>
                 </div>
@@ -1930,8 +1932,8 @@ const ClaimDetails = () => {
             )}
 
             {/* Resumen de Documentos */}
-            <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Resumen de Documentos</h3>
+            <div className="bg-white p-4 md:p-6 rounded-lg shadow-sm border border-gray-200">
+              <h3 className="text-base md:text-lg font-semibold text-gray-900 mb-4">Resumen de Documentos</h3>
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-2">
@@ -1980,9 +1982,9 @@ const ClaimDetails = () => {
             </div>
 
             {/* Historial de Actividad */}
-            <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Historial de Actividad</h3>
-              <div className="space-y-4">
+            <div className="bg-white p-4 md:p-6 rounded-lg shadow-sm border border-gray-200">
+              <h3 className="text-base md:text-lg font-semibold text-gray-900 mb-4">Historial de Actividad</h3>
+              <div className="space-y-4 max-h-[400px] overflow-y-auto">
                 {activityLog.map((activity, index) => (
                   <div key={index} className="flex items-start space-x-3">
                     <div className="flex-shrink-0">
@@ -1998,9 +2000,9 @@ const ClaimDetails = () => {
                         </div>
                       )}
                     </div>
-                    <div className="flex-1">
-                      <p className="text-sm font-medium text-gray-900">{activity.description}</p>
-                      <div className="flex items-center space-x-2 mt-1">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-gray-900 break-words">{activity.description}</p>
+                      <div className="flex flex-wrap items-center gap-2 mt-1">
                         <p className="text-xs text-gray-500">{activity.timestamp}</p>
                         <span
                           className={`text-xs px-1.5 py-0.5 rounded-full ${
@@ -2022,8 +2024,8 @@ const ClaimDetails = () => {
 
         {/* Modal de Comentario */}
         {showCommentModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white p-6 rounded-lg shadow-lg max-w-md w-full mx-4">
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white p-4 sm:p-6 rounded-lg shadow-lg max-w-md w-full mx-auto">
               <div className="flex items-center space-x-2 mb-4">
                 <SafeIcon icon={FiMessageSquare} className="w-5 h-5 text-primary" />
                 <h3 className="text-lg font-medium text-gray-900">Rechazar Documento</h3>
@@ -2041,7 +2043,7 @@ const ClaimDetails = () => {
                   required
                 />
               </div>
-              <div className="flex justify-end space-x-3">
+              <div className="flex flex-col sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-3">
                 <button
                   onClick={() => setShowCommentModal(false)}
                   className="px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-colors"
@@ -2062,8 +2064,8 @@ const ClaimDetails = () => {
 
         {/* Modal de Confirmación de Verificación */}
         {showVerifiedModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white p-6 rounded-lg shadow-lg max-w-md w-full mx-4">
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white p-4 sm:p-6 rounded-lg shadow-lg max-w-md w-full mx-auto">
               <div className="flex items-center space-x-2 mb-4">
                 <SafeIcon icon={FiCheck} className="w-6 h-6 text-green-500" />
                 <h3 className="text-lg font-medium text-gray-900">Confirmar Verificación</h3>
@@ -2079,7 +2081,7 @@ const ClaimDetails = () => {
                   </p>
                 </div>
               </div>
-              <div className="flex justify-end space-x-3">
+              <div className="flex flex-col sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-3">
                 <button
                   onClick={() => setShowVerifiedModal(false)}
                   className="px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-colors"

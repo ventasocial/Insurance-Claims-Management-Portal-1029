@@ -12,6 +12,14 @@ import AgentUserManagement from './pages/AgentUserManagement';
 import AgentManagement from './pages/AgentManagement';
 import ClientGroupManagement from './pages/ClientGroupManagement';
 
+// SuperAdmin Pages
+import SuperAdminDashboard from './pages/SuperAdminDashboard';
+import TenantManagement from './pages/TenantManagement';
+import CreateEditTenant from './pages/CreateEditTenant';
+import StripeSubscriptions from './pages/StripeSubscriptions';
+import WhiteLabelManagement from './pages/WhiteLabelManagement';
+import IntegrationsManagement from './pages/IntegrationsManagement';
+
 function App() {
   return (
     <AuthProvider>
@@ -19,70 +27,135 @@ function App() {
         <div className="min-h-screen bg-gray-50">
           <Routes>
             <Route path="/login" element={<Login />} />
-            <Route
-              path="/dashboard"
+            
+            {/* Client Routes */}
+            <Route 
+              path="/dashboard" 
               element={
                 <ProtectedRoute>
                   <ClientDashboard />
                 </ProtectedRoute>
-              }
+              } 
             />
-            <Route
-              path="/admin"
+            
+            {/* Admin Routes */}
+            <Route 
+              path="/admin" 
               element={
                 <ProtectedRoute adminOrStaff>
                   <AdminDashboard />
                 </ProtectedRoute>
-              }
+              } 
             />
-            <Route
-              path="/admin/usuarios"
+            <Route 
+              path="/admin/usuarios" 
               element={
                 <ProtectedRoute adminOnly>
                   <UserManagement />
                 </ProtectedRoute>
-              }
+              } 
             />
-            <Route
-              path="/admin/usuarios-agente"
+            <Route 
+              path="/admin/usuarios-agente" 
               element={
                 <ProtectedRoute adminOrStaff>
                   <AgentUserManagement />
                 </ProtectedRoute>
-              }
+              } 
             />
-            <Route
-              path="/admin/agentes"
+            <Route 
+              path="/admin/agentes" 
               element={
                 <ProtectedRoute adminOnly>
                   <AgentManagement />
                 </ProtectedRoute>
-              }
+              } 
             />
-            <Route
-              path="/admin/grupos"
+            <Route 
+              path="/admin/grupos" 
               element={
                 <ProtectedRoute adminOnly>
                   <ClientGroupManagement />
                 </ProtectedRoute>
-              }
+              } 
             />
-            <Route
-              path="/crear-reclamo"
+            
+            {/* SuperAdmin Routes */}
+            <Route 
+              path="/superadmin" 
+              element={
+                <ProtectedRoute superAdminOnly>
+                  <SuperAdminDashboard />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/superadmin/tenants" 
+              element={
+                <ProtectedRoute superAdminOnly>
+                  <TenantManagement />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/superadmin/tenants/new" 
+              element={
+                <ProtectedRoute superAdminOnly>
+                  <CreateEditTenant />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/superadmin/tenants/:id" 
+              element={
+                <ProtectedRoute superAdminOnly>
+                  <CreateEditTenant />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/superadmin/subscriptions" 
+              element={
+                <ProtectedRoute superAdminOnly>
+                  <StripeSubscriptions />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/superadmin/whitelabel" 
+              element={
+                <ProtectedRoute superAdminOnly>
+                  <WhiteLabelManagement />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/superadmin/integrations" 
+              element={
+                <ProtectedRoute superAdminOnly>
+                  <IntegrationsManagement />
+                </ProtectedRoute>
+              } 
+            />
+            
+            {/* Shared Routes */}
+            <Route 
+              path="/crear-reclamo" 
               element={
                 <ProtectedRoute>
                   <CreateClaim />
                 </ProtectedRoute>
-              }
+              } 
             />
-            <Route
-              path="/reclamo/:id"
+            <Route 
+              path="/reclamo/:id" 
               element={
                 <ProtectedRoute>
                   <ClaimDetails />
                 </ProtectedRoute>
-              }
+              } 
             />
+            
             <Route path="/" element={<Login />} />
           </Routes>
         </div>

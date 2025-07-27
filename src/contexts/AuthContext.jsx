@@ -26,7 +26,22 @@ export const AuthProvider = ({ children }) => {
   const login = async (email, password) => {
     try {
       // Simulación de login - en producción conectar con backend real
-      if (email === 'admin@seguro.com' && password === 'admin123') {
+      if (email === 'superadmin@platform.com' && password === 'superadmin123') {
+        const userData = {
+          id: 0,
+          email: 'superadmin@platform.com',
+          name: 'SuperAdmin',
+          firstName: 'Super',
+          paternalLastName: 'Admin',
+          maternalLastName: '',
+          whatsapp: '+52 55 0000 0000',
+          role: 'superadmin',
+          avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop&crop=face'
+        };
+        setUser(userData);
+        localStorage.setItem('user', JSON.stringify(userData));
+        return { success: true };
+      } else if (email === 'admin@seguro.com' && password === 'admin123') {
         const userData = {
           id: 1,
           email: 'admin@seguro.com',
