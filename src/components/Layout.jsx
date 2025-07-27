@@ -3,8 +3,10 @@ import { useAuth } from '../contexts/AuthContext';
 import { useNavigate, useLocation } from 'react-router-dom';
 import * as FiIcons from 'react-icons/fi';
 import SafeIcon from '../common/SafeIcon';
+import AvatarUploader from './AvatarUploader';
+import EmailManager from '../components/EmailManager';
 
-const { FiLogOut, FiUser, FiHome, FiUsers, FiEdit, FiX, FiSave, FiUserCheck } = FiIcons;
+const { FiLogOut, FiUser, FiHome, FiUsers, FiEdit, FiX, FiSave, FiUserCheck, FiCheck } = FiIcons;
 
 const Layout = ({ children, title }) => {
   const { user, logout, updateUserProfile } = useAuth();
@@ -15,10 +17,12 @@ const Layout = ({ children, title }) => {
     firstName: user?.firstName || '',
     paternalLastName: user?.paternalLastName || '',
     maternalLastName: user?.maternalLastName || '',
-    email: user?.email || '',
+    emails: user?.emails || (user?.email ? [{ email: user?.email, isPrimary: true, id: Date.now() }] : []),
+    groupId: user?.groupId || '',
+    avatar: user?.avatar || '',
     whatsapp: user?.whatsapp || ''
   });
-  const [errors, setErrors] = useState({});
+  const [formErrors, setFormErrors] = useState({});
 
   const handleLogout = () => {
     logout();
@@ -54,10 +58,12 @@ const Layout = ({ children, title }) => {
       firstName: user?.firstName || '',
       paternalLastName: user?.paternalLastName || '',
       maternalLastName: user?.maternalLastName || '',
-      email: user?.email || '',
+      emails: user?.emails || (user?.email ? [{ email: user?.email, isPrimary: true, id: Date.now() }] : []),
+      groupId: user?.groupId || '',
+      avatar: user?.avatar || '',
       whatsapp: user?.whatsapp || ''
     });
-    setErrors({});
+    setFormErrors({});
     setShowProfileModal(true);
   };
 
@@ -69,45 +75,73 @@ const Layout = ({ children, title }) => {
     }));
   };
 
+  const handleEmailsChange = (emails) => {
+    setProfileData(prev => ({
+      ...prev,
+      emails
+    }));
+  };
+
+  const handleAvatarChange = (avatarUrl) => {
+    setProfileData(prev => ({
+      ...prev,
+      avatar: avatarUrl
+    }));
+  };
+
   const validateProfileForm = () => {
-    const newErrors = {};
+    const errors = {};
 
     if (!profileData.firstName.trim()) {
-      newErrors.firstName = "El nombre es requerido";
+      errors.firstName = "El nombre es requerido";
     }
 
     if (!profileData.paternalLastName.trim()) {
-      newErrors.paternalLastName = "El apellido paterno es requerido";
+      errors.paternalLastName = "El apellido paterno es requerido";
     }
 
-    if (!profileData.email.trim()) {
-      newErrors.email = "El email es requerido";
-    } else if (!/\S+@\S+\.\S+/.test(profileData.email)) {
-      newErrors.email = "El email no es válido";
+    if (!profileData.emails || profileData.emails.length === 0) {
+      errors.emails = "Debe tener al menos un email";
+    } else {
+      // Validar que al menos un email sea válido
+      const validEmails = profileData.emails.filter(emailObj => 
+        emailObj.email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailObj.email)
+      );
+      if (validEmails.length === 0) {
+        errors.emails = "Debe tener al menos un email válido";
+      }
     }
 
     if (profileData.whatsapp && !profileData.whatsapp.startsWith('+')) {
-      newErrors.whatsapp = "El número debe incluir el código de país (ej. +52)";
+      errors.whatsapp = "El número debe incluir el código de país (ej. +52)";
     }
 
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+    setFormErrors(errors);
+    return Object.keys(errors).length === 0;
   };
 
   const handleSaveProfile = () => {
     if (!validateProfileForm()) return;
+
+    const primaryEmail = profileData.emails.find(e => e.isPrimary)?.email || profileData.emails[0]?.email;
 
     updateUserProfile({
       ...user,
       firstName: profileData.firstName,
       paternalLastName: profileData.paternalLastName,
       maternalLastName: profileData.maternalLastName,
-      email: profileData.email,
+      email: primaryEmail,
+      emails: profileData.emails,
+      avatar: profileData.avatar,
       whatsapp: profileData.whatsapp,
-      name: `${profileData.firstName} ${profileData.paternalLastName} ${profileData.maternalLastName}`.trim()
+      name: `${profileData.firstName} ${profileData.paternalLastName} ${profileData.maternalLastName || ''}`.trim()
     });
 
     setShowProfileModal(false);
+  };
+
+  const getFullName = () => {
+    return `${profileData.firstName} ${profileData.paternalLastName} ${profileData.maternalLastName || ''}`.trim();
   };
 
   // Determinar si el usuario actual es administrador o agente
@@ -233,94 +267,111 @@ const Layout = ({ children, title }) => {
       {/* Modal de Edición de Perfil */}
       {showProfileModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded-lg shadow-lg max-w-md w-full mx-4">
+          <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-6">
               <div className="flex items-center space-x-2">
-                <SafeIcon icon={FiUser} className="w-6 h-6 text-primary" />
+                <SafeIcon icon={FiEdit} className="w-6 h-6 text-primary" />
                 <h3 className="text-xl font-medium text-gray-900">Editar Perfil</h3>
               </div>
               <button
                 onClick={() => setShowProfileModal(false)}
-                className="text-gray-400 hover:text-gray-600"
+                className="text-gray-400 hover:text-gray-600 transition-colors"
               >
-                <SafeIcon icon={FiX} className="w-5 h-5" />
+                <SafeIcon icon={FiX} className="w-6 h-6" />
               </button>
             </div>
             
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Nombres*
-                </label>
-                <input
-                  type="text"
-                  name="firstName"
-                  value={profileData.firstName}
-                  onChange={handleProfileChange}
-                  className={`w-full border ${
-                    errors.firstName ? 'border-red-300' : 'border-gray-300'
-                  } rounded-md px-3 py-2 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary`}
-                  placeholder="Nombres"
+            <div className="space-y-6">
+              {/* Avatar Section */}
+              <div className="flex justify-center pb-6 border-b border-gray-200">
+                <AvatarUploader
+                  currentAvatar={profileData.avatar}
+                  onAvatarChange={handleAvatarChange}
+                  size="lg"
                 />
-                {errors.firstName && (
-                  <p className="mt-1 text-xs text-red-500">{errors.firstName}</p>
+              </div>
+
+              {/* Campos de Nombre */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Nombre(s) *
+                  </label>
+                  <input
+                    type="text"
+                    name="firstName"
+                    value={profileData.firstName}
+                    onChange={handleProfileChange}
+                    className={`w-full border ${
+                      formErrors.firstName ? 'border-red-300' : 'border-gray-300'
+                    } rounded-md px-3 py-2 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary`}
+                    placeholder="Nombres"
+                  />
+                  {formErrors.firstName && (
+                    <p className="mt-1 text-xs text-red-500">{formErrors.firstName}</p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Apellido Paterno *
+                  </label>
+                  <input
+                    type="text"
+                    name="paternalLastName"
+                    value={profileData.paternalLastName}
+                    onChange={handleProfileChange}
+                    className={`w-full border ${
+                      formErrors.paternalLastName ? 'border-red-300' : 'border-gray-300'
+                    } rounded-md px-3 py-2 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary`}
+                    placeholder="Apellido Paterno"
+                  />
+                  {formErrors.paternalLastName && (
+                    <p className="mt-1 text-xs text-red-500">{formErrors.paternalLastName}</p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Apellido Materno
+                  </label>
+                  <input
+                    type="text"
+                    name="maternalLastName"
+                    value={profileData.maternalLastName}
+                    onChange={handleProfileChange}
+                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary"
+                    placeholder="Apellido Materno"
+                  />
+                </div>
+              </div>
+
+              {/* Previsualización del nombre completo */}
+              {(profileData.firstName || profileData.paternalLastName) && (
+                <div className="bg-blue-50 p-3 rounded-md border border-blue-200">
+                  <div className="flex items-center space-x-2">
+                    <SafeIcon icon={FiCheck} className="w-4 h-4 text-blue-600" />
+                    <span className="text-sm font-medium text-blue-800">Nombre completo:</span>
+                    <span className="text-sm text-blue-900">{getFullName()}</span>
+                  </div>
+                </div>
+              )}
+
+              {/* Gestión de Emails */}
+              <div className={formErrors.emails ? 'border border-red-300 rounded-md p-4' : ''}>
+                <EmailManager
+                  emails={profileData.emails}
+                  onEmailsChange={handleEmailsChange}
+                  showPrimarySelector={true}
+                />
+                {formErrors.emails && (
+                  <p className="mt-2 text-xs text-red-500">{formErrors.emails}</p>
                 )}
               </div>
 
+              {/* WhatsApp */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Apellido Paterno*
-                </label>
-                <input
-                  type="text"
-                  name="paternalLastName"
-                  value={profileData.paternalLastName}
-                  onChange={handleProfileChange}
-                  className={`w-full border ${
-                    errors.paternalLastName ? 'border-red-300' : 'border-gray-300'
-                  } rounded-md px-3 py-2 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary`}
-                  placeholder="Apellido Paterno"
-                />
-                {errors.paternalLastName && (
-                  <p className="mt-1 text-xs text-red-500">{errors.paternalLastName}</p>
-                )}
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Apellido Materno
-                </label>
-                <input
-                  type="text"
-                  name="maternalLastName"
-                  value={profileData.maternalLastName}
-                  onChange={handleProfileChange}
-                  className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary"
-                  placeholder="Apellido Materno"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Email*
-                </label>
-                <input
-                  type="email"
-                  name="email"
-                  value={profileData.email}
-                  onChange={handleProfileChange}
-                  className={`w-full border ${
-                    errors.email ? 'border-red-300' : 'border-gray-300'
-                  } rounded-md px-3 py-2 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary`}
-                  placeholder="correo@ejemplo.com"
-                />
-                {errors.email && (
-                  <p className="mt-1 text-xs text-red-500">{errors.email}</p>
-                )}
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
                   Número de WhatsApp
                 </label>
                 <input
@@ -329,26 +380,26 @@ const Layout = ({ children, title }) => {
                   value={profileData.whatsapp}
                   onChange={handleProfileChange}
                   className={`w-full border ${
-                    errors.whatsapp ? 'border-red-300' : 'border-gray-300'
+                    formErrors.whatsapp ? 'border-red-300' : 'border-gray-300'
                   } rounded-md px-3 py-2 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary`}
                   placeholder="+52 55 1234 5678"
                 />
-                {errors.whatsapp && (
-                  <p className="mt-1 text-xs text-red-500">{errors.whatsapp}</p>
+                {formErrors.whatsapp && (
+                  <p className="mt-1 text-xs text-red-500">{formErrors.whatsapp}</p>
                 )}
               </div>
             </div>
 
-            <div className="mt-6 flex justify-end space-x-3">
+            <div className="mt-6 flex justify-end space-x-3 pt-6 border-t border-gray-200">
               <button
                 onClick={() => setShowProfileModal(false)}
-                className="px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-colors"
+                className="px-6 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-colors"
               >
                 Cancelar
               </button>
               <button
                 onClick={handleSaveProfile}
-                className="flex items-center space-x-2 px-4 py-2 bg-primary text-white rounded-md hover:bg-primary-dark transition-colors"
+                className="flex items-center space-x-2 px-6 py-2 bg-primary text-white rounded-md hover:bg-primary-dark transition-colors"
               >
                 <SafeIcon icon={FiSave} className="w-4 h-4" />
                 <span>Guardar Cambios</span>
