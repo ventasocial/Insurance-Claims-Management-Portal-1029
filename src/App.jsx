@@ -8,6 +8,7 @@ import AdminDashboard from './pages/AdminDashboard';
 import CreateClaim from './pages/CreateClaim';
 import ClaimDetails from './pages/ClaimDetails';
 import UserManagement from './pages/UserManagement';
+import AgentUserManagement from './pages/AgentUserManagement';
 import AgentManagement from './pages/AgentManagement';
 import ClientGroupManagement from './pages/ClientGroupManagement';
 
@@ -39,6 +40,14 @@ function App() {
               element={
                 <ProtectedRoute adminOnly>
                   <UserManagement />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/usuarios-agente"
+              element={
+                <ProtectedRoute adminOrStaff>
+                  <AgentUserManagement />
                 </ProtectedRoute>
               }
             />
