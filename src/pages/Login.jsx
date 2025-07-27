@@ -17,6 +17,7 @@ const Login = () => {
 
   useEffect(() => {
     if (user) {
+      console.log('User logged in:', user); // Debug log
       if (user.role === 'superadmin') {
         navigate('/superadmin');
       } else if (user.role === 'admin' || user.role === 'staff') {
@@ -32,13 +33,45 @@ const Login = () => {
     setError('');
     setLoading(true);
 
-    const result = await login(email, password);
-    if (result.success) {
-      // La navegación se maneja en el useEffect
-    } else {
-      setError(result.error);
+    try {
+      console.log('Submitting login form with:', { email, password }); // Debug log
+      const result = await login(email, password);
+      console.log('Login result:', result); // Debug log
+      
+      if (!result.success) {
+        setError(result.error || 'Error al iniciar sesión');
+      }
+      // La navegación se maneja en el useEffect cuando cambia el usuario
+    } catch (error) {
+      console.error("Error en submit:", error);
+      setError('Error inesperado al intentar iniciar sesión');
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
+  };
+
+  // Función para llenar credenciales de prueba
+  const fillTestCredentials = (userType) => {
+    switch (userType) {
+      case 'superadmin':
+        setEmail('superadmin@platform.com');
+        setPassword('superadmin123');
+        break;
+      case 'admin':
+        setEmail('admin@seguro.com');
+        setPassword('admin123');
+        break;
+      case 'staff':
+        setEmail('staff@seguro.com');
+        setPassword('staff123');
+        break;
+      case 'client':
+        setEmail('cliente@email.com');
+        setPassword('cliente123');
+        break;
+      default:
+        break;
+    }
   };
 
   return (
@@ -46,10 +79,10 @@ const Login = () => {
       <div className="flex-grow flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
         <div className="max-w-md w-full space-y-8">
           <div className="text-center">
-            <img 
-              src="https://storage.googleapis.com/msgsndr/HWRXLf7lstECUAG07eRw/media/685d77c05c72d29e532e823f.png" 
-              alt="Logo" 
-              className="h-16 w-auto mx-auto mb-6" 
+            <img
+              src="https://storage.googleapis.com/msgsndr/HWRXLf7lstECUAG07eRw/media/685d77c05c72d29e532e823f.png"
+              alt="Logo"
+              className="h-16 w-auto mx-auto mb-6"
             />
             <h2 className="text-3xl font-bold text-gray-900">
               Portal de Reclamos
@@ -105,9 +138,9 @@ const Login = () => {
                     className="absolute inset-y-0 right-0 pr-3 flex items-center"
                     onClick={() => setShowPassword(!showPassword)}
                   >
-                    <SafeIcon 
-                      icon={showPassword ? FiEyeOff : FiEye} 
-                      className="h-5 w-5 text-gray-400 hover:text-gray-600" 
+                    <SafeIcon
+                      icon={showPassword ? FiEyeOff : FiEye}
+                      className="h-5 w-5 text-gray-400 hover:text-gray-600"
                     />
                   </button>
                 </div>
@@ -138,12 +171,20 @@ const Login = () => {
           </form>
 
           <div className="mt-6 p-4 bg-blue-50 rounded-lg">
-            <h3 className="text-sm font-medium text-blue-800 mb-2">Cuentas de prueba:</h3>
-            <div className="text-xs text-blue-700 space-y-1">
-              <div><strong>SuperAdmin:</strong> superadmin@platform.com / superadmin123</div>
-              <div><strong>Admin:</strong> admin@seguro.com / admin123</div>
-              <div><strong>Agente:</strong> staff@seguro.com / staff123</div>
-              <div><strong>Cliente:</strong> cliente@email.com / cliente123</div>
+            <h3 className="text-sm font-medium text-blue-800 mb-3">Cuentas de prueba (click para llenar):</h3>
+            <div className="text-xs text-blue-700 space-y-2">
+              <div className="cursor-pointer hover:bg-blue-100 p-2 rounded" onClick={() => fillTestCredentials('superadmin')}>
+                <strong>SuperAdmin:</strong> superadmin@platform.com / superadmin123
+              </div>
+              <div className="cursor-pointer hover:bg-blue-100 p-2 rounded" onClick={() => fillTestCredentials('admin')}>
+                <strong>Admin:</strong> admin@seguro.com / admin123
+              </div>
+              <div className="cursor-pointer hover:bg-blue-100 p-2 rounded" onClick={() => fillTestCredentials('staff')}>
+                <strong>Agente:</strong> staff@seguro.com / staff123
+              </div>
+              <div className="cursor-pointer hover:bg-blue-100 p-2 rounded" onClick={() => fillTestCredentials('client')}>
+                <strong>Cliente:</strong> cliente@email.com / cliente123
+              </div>
             </div>
           </div>
         </div>
@@ -159,8 +200,8 @@ const Login = () => {
             <div>
               <p className="text-sm">
                 ¿Necesitas ayuda?{' '}
-                <a 
-                  href="mailto:hola@agendia.ai" 
+                <a
+                  href="mailto:hola@agendia.ai"
                   className="underline hover:text-blue-200 transition-colors"
                 >
                   hola@agendia.ai
