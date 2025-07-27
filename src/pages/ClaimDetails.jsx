@@ -5,8 +5,13 @@ import { useAuth } from '../contexts/AuthContext';
 import { mockClaims } from '../data/mockData';
 import * as FiIcons from 'react-icons/fi';
 import SafeIcon from '../common/SafeIcon';
+import ContactSelector from '../components/ContactSelector';
+import DocumentPreview from '../components/DocumentPreview';
+import PersonForm from '../components/PersonForm';
 
-const { FiArrowLeft, FiUser, FiMail, FiPhone, FiFileText, FiDownload, FiCheck, FiX, FiMessageSquare, FiUpload, FiAlertCircle, FiClock, FiEdit, FiUserCheck, FiUserPlus, FiSave, FiUsers, FiCreditCard, FiEye, FiShield, FiCalendar, FiTag, FiMapPin, FiClipboard, FiInfo, FiBuilding, FiBell } = FiIcons;
+const { FiArrowLeft, FiUser, FiMail, FiPhone, FiFileText, FiDownload, FiCheck, FiX, FiMessageSquare, FiUpload, 
+  FiAlertCircle, FiClock, FiEdit, FiUserCheck, FiUserPlus, FiSave, FiUsers, FiCreditCard, FiEye, FiShield, 
+  FiCalendar, FiTag, FiMapPin, FiClipboard, FiInfo, FiBuilding, FiBell, FiTrash2 } = FiIcons;
 
 const ClaimDetails = () => {
   const { id } = useParams();
@@ -25,16 +30,101 @@ const ClaimDetails = () => {
   const [activityLog, setActivityLog] = useState([]);
   const [claimData, setClaimData] = useState(null);
   const [activeTab, setActiveTab] = useState('affected');
+  const [isEditing, setIsEditing] = useState(false);
+  const [editingDescription, setEditingDescription] = useState(false);
+  const [newDescription, setNewDescription] = useState('');
+  const [showContactSelector, setShowContactSelector] = useState(false);
+  const [currentContactRole, setCurrentContactRole] = useState(null);
+  const [showPersonForm, setShowPersonForm] = useState(false);
+  const [editingContact, setEditingContact] = useState(null);
+  const [claimCode, setClaimCode] = useState('');
+  const [showDocumentPreview, setShowDocumentPreview] = useState(false);
+  const [previewDocument, setPreviewDocument] = useState(null);
+  
+  // Nuevo estado para almacenar documentos de identificación por rol
+  const [identificationDocs, setIdentificationDocs] = useState({
+    affected: [],
+    policyholder: [],
+    accountHolder: []
+  });
+
   const isAdminOrStaff = user?.role === 'admin' || user?.role === 'staff';
+  const isGestor = user?.id === claimData?.contacts?.manager?.userId;
 
   // Generamos un código de reclamo único de 4 caracteres alfanuméricos
-  const generateClaimCode = () => {
-    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-    let result = '';
-    for (let i = 0; i < 4; i++) {
-      result += chars.charAt(Math.floor(Math.random() * chars.length));
-    }
-    return result;
+  useEffect(() => {
+    const generateClaimCode = () => {
+      const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+      let result = '';
+      for (let i = 0; i < 4; i++) {
+        result += chars.charAt(Math.floor(Math.random() * chars.length));
+      }
+      return result;
+    };
+    
+    // Solo generar el código una vez al cargar el componente
+    setClaimCode(generateClaimCode());
+  }, []);
+
+  // Función para comprobar si el usuario puede editar el reclamo
+  const canEditClaim = () => {
+    if (!claimData) return false;
+    
+    // Solo se puede editar en estos estados
+    const editableStatuses = ['Pendiente', 'Verificado', 'Recibido'];
+    if (!editableStatuses.includes(claimData.status)) return false;
+    
+    return isAdminOrStaff || isGestor || 
+           user?.email === claimData?.contacts?.affected?.email ||
+           user?.email === claimData?.contacts?.policyholder?.email ||
+           user?.email === claimData?.contacts?.accountHolder?.email;
+  };
+
+  // Función para comprobar si el usuario puede editar la descripción
+  const canEditDescription = () => {
+    if (!claimData) return false;
+    
+    // Solo se puede editar en estos estados
+    const editableStatuses = ['Pendiente', 'Verificado', 'Recibido'];
+    if (!editableStatuses.includes(claimData.status)) return false;
+    
+    return isAdminOrStaff || isGestor || user?.email === claimData?.contacts?.affected?.email;
+  };
+
+  // Función para comprobar si el usuario puede subir documentos
+  const canUploadDocuments = () => {
+    if (!claimData) return false;
+    
+    // Solo se puede editar en estos estados
+    const editableStatuses = ['Pendiente', 'Verificado', 'Recibido'];
+    if (!editableStatuses.includes(claimData.status)) return false;
+    
+    return isAdminOrStaff || isGestor || 
+           user?.email === claimData?.contacts?.affected?.email ||
+           user?.email === claimData?.contacts?.policyholder?.email ||
+           user?.email === claimData?.contacts?.accountHolder?.email;
+  };
+
+  // Función para comprobar si el usuario puede eliminar documentos
+  const canDeleteDocuments = () => {
+    if (!claimData) return false;
+    
+    // Solo se puede editar en estos estados
+    const editableStatuses = ['Pendiente', 'Verificado', 'Recibido'];
+    if (!editableStatuses.includes(claimData.status)) return false;
+    
+    return isAdminOrStaff || isGestor;
+  };
+
+  // Función para comprobar si el usuario puede cambiar personas involucradas
+  const canChangeInvolvedPeople = () => {
+    if (!claimData) return false;
+    
+    // Solo se puede editar en estos estados
+    const editableStatuses = ['Pendiente', 'Verificado', 'Recibido'];
+    if (!editableStatuses.includes(claimData.status)) return false;
+    
+    return isAdminOrStaff || isGestor;
   };
 
   // Encontrar el reclamo por ID
@@ -153,9 +243,26 @@ const ClaimDetails = () => {
             ]
           }
         ],
-        'Documentos de Identidad': [
+        'Facturas y Comprobantes': [
           {
-            id: 'doc-5',
+            id: 'doc-6',
+            name: 'Factura Hospital.pdf',
+            type: 'Factura',
+            status: 'pendiente',
+            comment: 'Documento pendiente de recepción',
+            url: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
+            commentHistory: []
+          }
+        ]
+      };
+
+      setDocuments(docStructure);
+
+      // Inicializar documentos de identificación
+      const idDocs = {
+        affected: [
+          {
+            id: 'id-affected-1',
             name: 'Identificación Oficial.jpg',
             type: 'Identificación',
             status: 'aprobado',
@@ -173,20 +280,11 @@ const ClaimDetails = () => {
             ]
           }
         ],
-        'Facturas y Comprobantes': [
-          {
-            id: 'doc-6',
-            name: 'Factura Hospital.pdf',
-            type: 'Factura',
-            status: 'pendiente',
-            comment: 'Documento pendiente de recepción',
-            url: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
-            commentHistory: []
-          }
-        ]
+        policyholder: [],
+        accountHolder: []
       };
 
-      setDocuments(docStructure);
+      setIdentificationDocs(idDocs);
 
       // Inicializar datos del reclamo con información de los diferentes roles
       setClaimData({
@@ -198,7 +296,6 @@ const ClaimDetails = () => {
         date: claim.date,
         description: claim.description,
         status: claim.status,
-
         // Información de los contactos involucrados
         contacts: {
           // Asegurado afectado (siempre presente)
@@ -231,7 +328,8 @@ const ClaimDetails = () => {
             email: "ana.martinez@email.com",
             whatsapp: "+52 55 7777 8888",
             avatar: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100&h=100&fit=crop&crop=face",
-            roles: ["manager"]
+            roles: ["manager"],
+            userId: 4
           },
           // Agente(s) asignado(s)
           agents: [
@@ -245,6 +343,8 @@ const ClaimDetails = () => {
           ]
         }
       });
+
+      setNewDescription(claim.description);
 
       // Inicializar historial de actividades con avatares
       setActivityLog([
@@ -319,6 +419,7 @@ const ClaimDetails = () => {
       case 'Enviado a Aseguradora': return 'bg-purple-100 text-purple-800';
       case 'Archivado': return 'bg-gray-100 text-gray-800';
       case 'Aprobado': return 'bg-green-100 text-green-800';
+      case 'Recibido': return 'bg-cyan-100 text-cyan-800';
       default: return 'bg-gray-100 text-gray-800';
     }
   };
@@ -369,6 +470,12 @@ const ClaimDetails = () => {
 
     setActivityLog([...activityLog, newActivity]);
 
+    // Actualizar el estado del reclamo
+    setClaimData({
+      ...claimData,
+      status: newStatus
+    });
+
     // Simulación de cambio de estatus
     alert(`Estatus cambiado a: ${newStatus}`);
     setNewStatus('');
@@ -404,6 +511,7 @@ const ClaimDetails = () => {
         });
         documents[category] = updatedDocs;
       });
+
       setDocuments({ ...documents });
 
       // Añadir al historial de actividad
@@ -423,6 +531,39 @@ const ClaimDetails = () => {
       setActivityLog([...activityLog, newActivity]);
       alert(`Documento aprobado exitosamente`);
     }
+  };
+
+  const handleDeleteDocument = (docId, category) => {
+    if (!canDeleteDocuments()) return;
+    
+    // Encontrar el documento para guardar su nombre
+    const docToDelete = documents[category].find(doc => doc.id === docId);
+    
+    if (!docToDelete) return;
+    
+    // Eliminar el documento
+    const updatedDocuments = { ...documents };
+    updatedDocuments[category] = documents[category].filter(doc => doc.id !== docId);
+    
+    // Si la categoría queda vacía, la mantenemos como un array vacío
+    if (updatedDocuments[category].length === 0) {
+      updatedDocuments[category] = [];
+    }
+    
+    setDocuments(updatedDocuments);
+    
+    // Añadir al historial de actividad
+    const newActivity = {
+      type: 'document',
+      description: `Documento eliminado: ${docToDelete.name}`,
+      timestamp: new Date().toISOString().split('T')[0],
+      user: user?.role || 'usuario',
+      userName: user?.name || 'Usuario',
+      userAvatar: user?.avatar || "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop&crop=face"
+    };
+    
+    setActivityLog([...activityLog, newActivity]);
+    alert(`Documento eliminado exitosamente`);
   };
 
   const handleCommentSubmit = () => {
@@ -449,6 +590,7 @@ const ClaimDetails = () => {
       });
       documents[category] = updatedDocs;
     });
+
     setDocuments({ ...documents });
 
     // Añadir al historial de actividad
@@ -518,6 +660,7 @@ const ClaimDetails = () => {
       });
       documents[category] = updatedDocs;
     });
+
     setDocuments({ ...documents });
 
     // Añadir al historial de actividad
@@ -533,6 +676,203 @@ const ClaimDetails = () => {
     setActivityLog([...activityLog, newActivity]);
     setReuploadMode(null);
     alert(`Documento resubido exitosamente`);
+  };
+
+  const handleNewDocumentUpload = (e, category, docType) => {
+    if (!canUploadDocuments() || !isEditing) return;
+    
+    const files = Array.from(e.target.files);
+    if (!files || files.length === 0) return;
+    
+    const allowedTypes = ['application/pdf', 'image/png', 'image/jpeg', 'image/jpg'];
+    const maxFileSize = 10 * 1024 * 1024; // 10MB
+    
+    // Filtrar archivos válidos
+    const validFiles = files.filter(file => {
+      if (!allowedTypes.includes(file.type)) {
+        alert(`Archivo ${file.name} no es válido. Solo se permiten PDF, PNG y JPG.`);
+        return false;
+      }
+      
+      if (file.size > maxFileSize) {
+        alert(`Archivo ${file.name} es muy grande. Máximo 10MB por archivo.`);
+        return false;
+      }
+      
+      return true;
+    });
+    
+    if (validFiles.length === 0) return;
+    
+    // Crear nuevos documentos
+    const newDocuments = validFiles.map(file => {
+      const url = URL.createObjectURL(file);
+      return {
+        id: `doc-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        name: file.name,
+        type: docType || 'Documento',
+        status: 'recibido',
+        comment: 'Documento añadido, pendiente de revisión',
+        url: url,
+        file: file,
+        commentHistory: [
+          {
+            id: 1,
+            comment: 'Documento añadido, pendiente de revisión',
+            status: 'recibido',
+            timestamp: new Date().toISOString(),
+            userName: user?.name || 'Usuario',
+            userAvatar: user?.avatar
+          }
+        ]
+      };
+    });
+    
+    // Actualizar documentos
+    const updatedDocuments = { ...documents };
+    if (!updatedDocuments[category]) {
+      updatedDocuments[category] = [];
+    }
+    updatedDocuments[category] = [...updatedDocuments[category], ...newDocuments];
+    
+    setDocuments(updatedDocuments);
+    
+    // Añadir al historial de actividad
+    validFiles.forEach(file => {
+      const newActivity = {
+        type: 'document',
+        description: `Documento añadido: ${file.name}`,
+        timestamp: new Date().toISOString().split('T')[0],
+        user: user?.role || 'usuario',
+        userName: user?.name || 'Usuario',
+        userAvatar: user?.avatar
+      };
+      
+      setActivityLog(prev => [...prev, newActivity]);
+    });
+    
+    alert(`${validFiles.length} documento(s) añadido(s) exitosamente`);
+  };
+
+  // Nueva función para manejar la subida de documentos de identificación por persona
+  const handleIdentificationUpload = (e, role) => {
+    if (!canUploadDocuments() || !isEditing) return;
+    
+    const files = Array.from(e.target.files);
+    if (!files || files.length === 0) return;
+    
+    const allowedTypes = ['application/pdf', 'image/png', 'image/jpeg', 'image/jpg'];
+    const maxFileSize = 10 * 1024 * 1024; // 10MB
+    const maxFiles = 2; // Máximo 2 archivos para identificación
+    
+    // Verificar si ya hay archivos y cuántos más se pueden agregar
+    const currentFiles = identificationDocs[role] || [];
+    const remainingSlots = maxFiles - currentFiles.length;
+    
+    if (remainingSlots <= 0) {
+      alert(`Ya has subido el máximo de ${maxFiles} archivos para la identificación. Elimina uno para subir otro.`);
+      return;
+    }
+    
+    // Filtrar archivos válidos
+    const validFiles = files.filter(file => {
+      if (!allowedTypes.includes(file.type)) {
+        alert(`Archivo ${file.name} no es válido. Solo se permiten PDF, PNG y JPG.`);
+        return false;
+      }
+      
+      if (file.size > maxFileSize) {
+        alert(`Archivo ${file.name} es muy grande. Máximo 10MB por archivo.`);
+        return false;
+      }
+      
+      return true;
+    }).slice(0, remainingSlots);
+    
+    if (validFiles.length === 0) return;
+    
+    // Crear nuevos documentos
+    const newDocuments = validFiles.map(file => {
+      const url = URL.createObjectURL(file);
+      return {
+        id: `id-${role}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        name: file.name,
+        type: 'Identificación',
+        status: 'recibido',
+        comment: 'Identificación añadida, pendiente de revisión',
+        url: url,
+        file: file,
+        commentHistory: [
+          {
+            id: 1,
+            comment: 'Identificación añadida, pendiente de revisión',
+            status: 'recibido',
+            timestamp: new Date().toISOString(),
+            userName: user?.name || 'Usuario',
+            userAvatar: user?.avatar
+          }
+        ]
+      };
+    });
+    
+    // Actualizar documentos de identificación
+    setIdentificationDocs(prev => ({
+      ...prev,
+      [role]: [...(prev[role] || []), ...newDocuments]
+    }));
+    
+    // Añadir al historial de actividad
+    validFiles.forEach(file => {
+      const newActivity = {
+        type: 'document',
+        description: `Identificación añadida para ${getRoleLabel(role)}: ${file.name}`,
+        timestamp: new Date().toISOString().split('T')[0],
+        user: user?.role || 'usuario',
+        userName: user?.name || 'Usuario',
+        userAvatar: user?.avatar
+      };
+      
+      setActivityLog(prev => [...prev, newActivity]);
+    });
+    
+    alert(`${validFiles.length} identificación(es) añadida(s) exitosamente`);
+  };
+
+  // Nueva función para eliminar documento de identificación
+  const handleDeleteIdDocument = (id, role) => {
+    if (!canDeleteDocuments() || !isEditing) return;
+    
+    // Encontrar el documento para guardar su nombre
+    const docToDelete = identificationDocs[role].find(doc => doc.id === id);
+    
+    if (!docToDelete) return;
+    
+    // Eliminar el documento
+    const updatedDocs = {
+      ...identificationDocs,
+      [role]: identificationDocs[role].filter(doc => doc.id !== id)
+    };
+    
+    setIdentificationDocs(updatedDocs);
+    
+    // Añadir al historial de actividad
+    const newActivity = {
+      type: 'document',
+      description: `Identificación eliminada de ${getRoleLabel(role)}: ${docToDelete.name}`,
+      timestamp: new Date().toISOString().split('T')[0],
+      user: user?.role || 'usuario',
+      userName: user?.name || 'Usuario',
+      userAvatar: user?.avatar || "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop&crop=face"
+    };
+    
+    setActivityLog([...activityLog, newActivity]);
+    alert(`Identificación eliminada exitosamente`);
+  };
+
+  // Nueva función para abrir la previsualización de documentos
+  const openDocumentPreview = (doc) => {
+    setPreviewDocument(doc);
+    setShowDocumentPreview(true);
   };
 
   const handleVerifiedConfirm = () => {
@@ -554,6 +894,12 @@ const ClaimDetails = () => {
     // Cerrar el modal y mostrar confirmación
     setShowVerifiedModal(false);
     alert('Reclamo marcado como Verificado');
+    
+    // Actualizar el estado del reclamo
+    setClaimData({
+      ...claimData,
+      status: 'Verificado'
+    });
   };
 
   const handleSaveClaimNumber = () => {
@@ -575,8 +921,132 @@ const ClaimDetails = () => {
     setIsEditingClaimNumber(false);
   };
 
-  // Generar código de reclamo
-  const claimCode = generateClaimCode();
+  // Manejar la actualización de la descripción
+  const handleSaveDescription = () => {
+    if (!canEditDescription()) return;
+    
+    if (newDescription !== claimData.description) {
+      setClaimData({
+        ...claimData,
+        description: newDescription
+      });
+      
+      // Añadir al historial de actividad
+      const newActivity = {
+        type: 'edit',
+        description: 'Descripción del reclamo actualizada',
+        timestamp: new Date().toISOString().split('T')[0],
+        user: user?.role || 'usuario',
+        userName: user?.name || 'Usuario',
+        userAvatar: user?.avatar
+      };
+      
+      setActivityLog([...activityLog, newActivity]);
+      
+      alert('Descripción actualizada correctamente');
+    }
+    
+    setEditingDescription(false);
+  };
+
+  // Manejar la actualización de contactos
+  const openContactSelector = (role) => {
+    if (!canChangeInvolvedPeople()) return;
+    
+    setCurrentContactRole(role);
+    setShowContactSelector(true);
+  };
+
+  const handleSelectContact = (contact) => {
+    if (!canChangeInvolvedPeople()) return;
+    
+    // Actualizar el contacto correspondiente
+    const updatedContacts = { ...claimData.contacts };
+    
+    if (currentContactRole === 'agent') {
+      // Para agentes, que son un array
+      updatedContacts.agents = [contact];
+    } else {
+      updatedContacts[currentContactRole] = contact;
+    }
+    
+    setClaimData({
+      ...claimData,
+      contacts: updatedContacts
+    });
+    
+    // Añadir al historial de actividad
+    const newActivity = {
+      type: 'edit',
+      description: `Persona involucrada actualizada: ${getRoleLabel(currentContactRole)}`,
+      timestamp: new Date().toISOString().split('T')[0],
+      user: user?.role || 'usuario',
+      userName: user?.name || 'Usuario',
+      userAvatar: user?.avatar
+    };
+    
+    setActivityLog([...activityLog, newActivity]);
+    
+    setShowContactSelector(false);
+    alert(`${getRoleLabel(currentContactRole)} actualizado correctamente`);
+  };
+
+  const handleCreateNewContact = (role) => {
+    if (!canChangeInvolvedPeople()) return;
+    
+    setCurrentContactRole(role);
+    setEditingContact(null);
+    setShowPersonForm(true);
+  };
+
+  const handleEditContact = (role) => {
+    if (!canChangeInvolvedPeople()) return;
+    
+    setCurrentContactRole(role);
+    
+    if (role === 'agent' && claimData.contacts.agents && claimData.contacts.agents.length > 0) {
+      setEditingContact(claimData.contacts.agents[0]);
+    } else {
+      setEditingContact(claimData.contacts[role]);
+    }
+    
+    setShowPersonForm(true);
+  };
+
+  const handleSavePerson = (personData) => {
+    if (!canChangeInvolvedPeople()) return;
+    
+    // Actualizar el contacto correspondiente
+    const updatedContacts = { ...claimData.contacts };
+    
+    if (currentContactRole === 'agent') {
+      // Para agentes, que son un array
+      updatedContacts.agents = [personData];
+    } else {
+      updatedContacts[currentContactRole] = personData;
+    }
+    
+    setClaimData({
+      ...claimData,
+      contacts: updatedContacts
+    });
+    
+    // Añadir al historial de actividad
+    const newActivity = {
+      type: 'edit',
+      description: `Persona involucrada ${editingContact ? 'actualizada' : 'añadida'}: ${getRoleLabel(currentContactRole)}`,
+      timestamp: new Date().toISOString().split('T')[0],
+      user: user?.role || 'usuario',
+      userName: user?.name || 'Usuario',
+      userAvatar: user?.avatar
+    };
+    
+    setActivityLog([...activityLog, newActivity]);
+    
+    setShowPersonForm(false);
+    setEditingContact(null);
+    alert(`${getRoleLabel(currentContactRole)} ${editingContact ? 'actualizado' : 'añadido'} correctamente`);
+  };
 
   // Función para renderizar la previsualización de un documento
   const renderDocumentPreview = (doc) => {
@@ -590,25 +1060,37 @@ const ClaimDetails = () => {
             src={doc.url}
             alt={doc.name}
             className="w-full h-full object-cover cursor-pointer hover:opacity-80 transition-opacity"
-            onClick={() => window.open(doc.url, '_blank')}
+            onClick={() => openDocumentPreview(doc)}
           />
         ) : isPdf ? (
           <div
             className="w-full h-full flex items-center justify-center bg-red-50 cursor-pointer hover:bg-red-100 transition-colors"
-            onClick={() => window.open(doc.url, '_blank')}
+            onClick={() => openDocumentPreview(doc)}
           >
             <SafeIcon icon={FiFileText} className="w-8 h-8 text-red-500" />
           </div>
         ) : (
           <div
             className="w-full h-full flex items-center justify-center bg-gray-100 cursor-pointer hover:bg-gray-200 transition-colors"
-            onClick={() => window.open(doc.url, '_blank')}
+            onClick={() => openDocumentPreview(doc)}
           >
             <SafeIcon icon={FiFileText} className="w-8 h-8 text-gray-400" />
           </div>
         )}
       </div>
     );
+  };
+
+  // Función para obtener la etiqueta del rol
+  const getRoleLabel = (role) => {
+    switch (role) {
+      case 'affected': return 'Asegurado Afectado';
+      case 'policyholder': return 'Asegurado Titular';
+      case 'accountHolder': return 'Titular de Cuenta';
+      case 'manager': return 'Gestor';
+      case 'agent': return 'Agente';
+      default: return role;
+    }
   };
 
   // Función para obtener los contactos disponibles para los tabs
@@ -672,18 +1154,33 @@ const ClaimDetails = () => {
 
   const contactTabs = getContactTabs();
 
+  // Función para formatear el tamaño del archivo
+  const formatFileSize = (bytes) => {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  };
+
   // Función para renderizar el contenido de un tab de contacto
   const renderContactTab = (contact, color = 'blue') => {
     const colorClasses = {
-      blue: 'text-blue-600 bg-blue-50 border-blue-200',
-      green: 'text-green-600 bg-green-50 border-green-200',
-      purple: 'text-purple-600 bg-purple-50 border-purple-200',
-      orange: 'text-orange-600 bg-orange-50 border-orange-200',
-      indigo: 'text-indigo-600 bg-indigo-50 border-indigo-200'
+      blue: 'text-blue-600 bg-blue-50 border-l-4 border-blue-500',
+      green: 'text-green-600 bg-green-50 border-l-4 border-green-500',
+      purple: 'text-purple-600 bg-purple-50 border-l-4 border-purple-500',
+      orange: 'text-orange-600 bg-orange-50 border-l-4 border-orange-500',
+      indigo: 'text-indigo-600 bg-indigo-50 border-l-4 border-indigo-500'
     };
 
+    // Determinar el rol actual basado en la pestaña activa
+    const currentRole = activeTab.includes('agent-') ? 'agent' : activeTab;
+    
+    // Obtener documentos de identificación para este rol
+    const idDocs = identificationDocs[currentRole] || [];
+
     return (
-      <div className={`p-6 rounded-lg border ${colorClasses[color] || colorClasses.blue}`}>
+      <div className={`p-6 rounded-lg ${colorClasses[color] || colorClasses.blue}`}>
         <div className="flex items-start space-x-4">
           <div className="flex-shrink-0">
             {contact.avatar ? (
@@ -698,6 +1195,7 @@ const ClaimDetails = () => {
               </div>
             )}
           </div>
+
           <div className="flex-1">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
               <div className="space-y-2">
@@ -712,12 +1210,14 @@ const ClaimDetails = () => {
                   <span className="text-gray-900">{contact.email}</span>
                 </div>
               </div>
+
               <div className="space-y-2">
                 <div className="flex items-center space-x-2">
                   <SafeIcon icon={FiPhone} className="w-4 h-4 text-gray-500" />
                   <span className="font-medium text-gray-700">WhatsApp:</span>
                   <span className="text-gray-900">{contact.whatsapp}</span>
                 </div>
+
                 {/* Mostrar roles si tiene más de uno */}
                 {contact.roles && contact.roles.length > 1 && (
                   <div className="flex items-center space-x-2">
@@ -732,6 +1232,7 @@ const ClaimDetails = () => {
                           'manager': 'Gestor',
                           'agent': 'Agente'
                         };
+
                         return (
                           <span
                             key={role}
@@ -748,6 +1249,153 @@ const ClaimDetails = () => {
             </div>
           </div>
         </div>
+        
+        {/* Botones de edición en modo de edición */}
+        {isEditing && canChangeInvolvedPeople() && (
+          <div className="flex justify-end mt-4 pt-4 border-t border-gray-200">
+            <button
+              type="button"
+              onClick={() => handleEditContact(activeTab.includes('agent-') ? 'agent' : activeTab)}
+              className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors mr-2"
+            >
+              <SafeIcon icon={FiEdit} className="w-4 h-4" />
+              <span>Editar</span>
+            </button>
+            
+            <button
+              type="button"
+              onClick={() => openContactSelector(activeTab.includes('agent-') ? 'agent' : activeTab)}
+              className="flex items-center space-x-2 px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 transition-colors"
+            >
+              <SafeIcon icon={FiUsers} className="w-4 h-4" />
+              <span>Seleccionar existente</span>
+            </button>
+          </div>
+        )}
+
+        {/* Sección de Identificación Oficial */}
+        {!currentRole.includes('agent') && !currentRole.includes('manager') && (
+          <div className="mt-6 pt-4 border-t border-gray-200">
+            <h4 className="text-sm font-medium text-gray-700 mb-2 flex items-center">
+              <SafeIcon icon={FiFileText} className="w-4 h-4 mr-2 text-gray-500" />
+              Identificación Oficial
+            </h4>
+            
+            {/* Área de carga de documentos de identificación */}
+            {isEditing && canUploadDocuments() && (
+              <div className="mb-3">
+                <div className="border-2 border-dashed border-gray-300 rounded-lg p-3 bg-white hover:border-gray-400 transition-colors">
+                  <div className="text-center">
+                    <SafeIcon icon={FiUpload} className="w-5 h-5 text-gray-400 mx-auto mb-2" />
+                    <p className="text-xs text-gray-600 mb-2">
+                      INE por ambos lados o Pasaporte (Vigentes)
+                    </p>
+                    <input 
+                      type="file" 
+                      multiple 
+                      accept=".pdf,.png,.jpg,.jpeg" 
+                      onChange={(e) => handleIdentificationUpload(e, currentRole)}
+                      className="hidden" 
+                      id={`id-upload-${currentRole}`} 
+                    />
+                    <label 
+                      htmlFor={`id-upload-${currentRole}`} 
+                      className="inline-block bg-blue-600 text-white px-3 py-1 rounded-md text-xs cursor-pointer hover:bg-blue-700 transition-colors"
+                    >
+                      Seleccionar archivos
+                    </label>
+                    <p className="text-xs text-gray-500 mt-1">
+                      Máximo 2 archivos, 10MB cada uno
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+            
+            {/* Mostrar documentos de identificación cargados */}
+            {idDocs.length > 0 ? (
+              <div className="space-y-2">
+                {idDocs.map((doc) => (
+                  <div 
+                    key={doc.id} 
+                    className={`flex items-center justify-between p-2 rounded-md ${
+                      doc.status === 'rechazado' 
+                        ? 'border border-red-200 bg-red-50' 
+                        : doc.status === 'aprobado' 
+                        ? 'border border-green-200 bg-green-50' 
+                        : 'border border-blue-200 bg-blue-50'
+                    }`}
+                  >
+                    <div className="flex items-center space-x-3 flex-1">
+                      {renderDocumentPreview(doc)}
+                      <div className="flex-1">
+                        <div className="flex items-center space-x-2">
+                          <p className="text-sm font-medium text-gray-900">{doc.name}</p>
+                          {getDocumentStatusBadge(doc.status)}
+                        </div>
+                        <p className="text-xs text-gray-500">{formatFileSize(doc.size || 0)}</p>
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-center space-x-2">
+                      {doc.status !== 'pendiente' && (
+                        <button
+                          onClick={() => openDocumentPreview(doc)}
+                          className="text-primary hover:text-primary-dark text-sm"
+                        >
+                          <SafeIcon icon={FiEye} className="w-4 h-4" />
+                        </button>
+                      )}
+                      
+                      {user?.role === 'admin' && doc.status === 'recibido' && (
+                        <>
+                          <button
+                            onClick={() => handleDocumentAction('approve', doc.id)}
+                            className="text-green-600 hover:text-green-700 text-sm"
+                          >
+                            <SafeIcon icon={FiCheck} className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => handleDocumentAction('reject', doc.id)}
+                            className="text-red-600 hover:text-red-700 text-sm"
+                          >
+                            <SafeIcon icon={FiX} className="w-4 h-4" />
+                          </button>
+                        </>
+                      )}
+                      
+                      {user?.role !== 'admin' && doc.status === 'rechazado' && (
+                        <button
+                          onClick={() => handleReupload(doc.id)}
+                          className="text-primary hover:text-primary-dark text-sm flex items-center space-x-1"
+                        >
+                          <SafeIcon icon={FiUpload} className="w-4 h-4" />
+                          <span className="text-xs">Subir nuevamente</span>
+                        </button>
+                      )}
+                      
+                      {/* Botón para eliminar documento en modo edición */}
+                      {isEditing && canDeleteDocuments() && (
+                        <button
+                          onClick={() => handleDeleteIdDocument(doc.id, currentRole)}
+                          className="text-red-600 hover:text-red-700 text-sm"
+                        >
+                          <SafeIcon icon={FiTrash2} className="w-4 h-4" />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="flex items-center justify-center p-4 bg-gray-50 border border-gray-200 rounded-md">
+                <p className="text-sm text-gray-500">
+                  No hay documentos de identificación cargados
+                </p>
+              </div>
+            )}
+          </div>
+        )}
       </div>
     );
   };
@@ -783,12 +1431,13 @@ const ClaimDetails = () => {
                 <div className="flex items-center space-x-2 mb-1">
                   <span className="font-medium text-gray-700">{entry.userName}</span>
                   <span
-                    className={`px-1.5 py-0.5 text-xs rounded-full ${entry.status === 'aprobado'
-                      ? 'bg-green-100 text-green-700'
-                      : entry.status === 'rechazado'
+                    className={`px-1.5 py-0.5 text-xs rounded-full ${
+                      entry.status === 'aprobado'
+                        ? 'bg-green-100 text-green-700'
+                        : entry.status === 'rechazado'
                         ? 'bg-red-100 text-red-700'
                         : 'bg-blue-100 text-blue-700'
-                      }`}
+                    }`}
                   >
                     {entry.status}
                   </span>
@@ -811,11 +1460,16 @@ const ClaimDetails = () => {
     );
   };
 
+  // Función para verificar si un documento debe ser mostrado (excluye identificaciones oficiales)
+  const shouldShowDocument = (docName) => {
+    return !docName.includes('Identificación Oficial');
+  };
+
   return (
     <Layout title={`Reclamo - ${claimCode}`}>
       <div className="max-w-6xl mx-auto space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between">
+        {/* Header con botón de edición sticky */}
+        <div className="flex items-center justify-between sticky top-0 z-30 bg-gray-50 py-2 mb-4 shadow-sm">
           <div className="flex items-center space-x-4">
             <button
               onClick={() => navigate(user?.role === 'admin' ? '/admin' : '/dashboard')}
@@ -827,13 +1481,36 @@ const ClaimDetails = () => {
             <div>
               <h1 className="text-2xl font-bold text-gray-900">Reclamo - {claimCode}</h1>
               <div className="flex items-center space-x-3 mt-1">
-                <span className={`px-2 py-1 text-sm font-medium rounded-full ${getStatusColor(claim.status)}`}>
-                  {claim.status}
+                <span className={`px-2 py-1 text-sm font-medium rounded-full ${getStatusColor(claimData.status)}`}>
+                  {claimData.status}
                 </span>
                 <span className="text-sm text-gray-600">Creado el {claim.date}</span>
               </div>
             </div>
           </div>
+          
+          {/* Botones de modo edición */}
+          {canEditClaim() && (
+            <div>
+              {!isEditing ? (
+                <button
+                  onClick={() => setIsEditing(true)}
+                  className="flex items-center space-x-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+                >
+                  <SafeIcon icon={FiEdit} className="w-5 h-5" />
+                  <span>Editar Reclamo</span>
+                </button>
+              ) : (
+                <button
+                  onClick={() => setIsEditing(false)}
+                  className="flex items-center space-x-2 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors"
+                >
+                  <SafeIcon icon={FiCheck} className="w-5 h-5" />
+                  <span>Finalizar Edición</span>
+                </button>
+              )}
+            </div>
+          )}
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -855,6 +1532,7 @@ const ClaimDetails = () => {
                       <p className="text-base text-gray-900">{claimData.claimType}</p>
                     </div>
                   </div>
+
                   <div className="flex items-center space-x-3">
                     <SafeIcon icon={FiMapPin} className="w-5 h-5 text-gray-500" />
                     <div>
@@ -872,6 +1550,7 @@ const ClaimDetails = () => {
                       <p className="text-base text-gray-900">{claimData.insurance}</p>
                     </div>
                   </div>
+
                   <div className="flex items-center space-x-3">
                     <SafeIcon icon={FiShield} className="w-5 h-5 text-gray-500" />
                     <div>
@@ -928,46 +1607,101 @@ const ClaimDetails = () => {
                 </div>
               </div>
 
-              {claimData.description && (
-                <div className="border-t border-gray-200 pt-4 mt-4">
-                  <div className="flex items-start space-x-3">
-                    <SafeIcon icon={FiMessageSquare} className="w-5 h-5 text-gray-500 mt-0.5" />
-                    <div>
+              {/* Descripción con opción de edición */}
+              <div className="border-t border-gray-200 pt-4 mt-4">
+                <div className="flex items-start space-x-3">
+                  <SafeIcon icon={FiMessageSquare} className="w-5 h-5 text-gray-500 mt-0.5" />
+                  <div className="flex-1">
+                    <div className="flex items-center justify-between mb-2">
                       <span className="text-sm font-medium text-gray-700">Descripción:</span>
-                      <p className="text-base text-gray-900 mt-1">{claimData.description}</p>
+                      
+                      {canEditDescription() && !editingDescription && isEditing && (
+                        <button 
+                          onClick={() => setEditingDescription(true)}
+                          className="text-blue-600 hover:text-blue-800 text-sm flex items-center"
+                        >
+                          <SafeIcon icon={FiEdit} className="w-4 h-4 mr-1" />
+                          Editar
+                        </button>
+                      )}
                     </div>
+                    
+                    {editingDescription ? (
+                      <div>
+                        <textarea
+                          value={newDescription}
+                          onChange={(e) => setNewDescription(e.target.value)}
+                          rows={4}
+                          className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary"
+                          placeholder="Descripción del reclamo"
+                        />
+                        <div className="flex justify-end mt-2 space-x-2">
+                          <button
+                            onClick={() => {
+                              setEditingDescription(false);
+                              setNewDescription(claimData.description);
+                            }}
+                            className="px-3 py-1 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-colors"
+                          >
+                            Cancelar
+                          </button>
+                          <button
+                            onClick={handleSaveDescription}
+                            className="px-3 py-1 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+                          >
+                            Guardar
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <p className="text-base text-gray-900 mt-1">{claimData.description}</p>
+                    )}
                   </div>
                 </div>
-              )}
+              </div>
             </div>
 
             {/* Información de Contactos con Tabs */}
             <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-              <div className="flex items-center space-x-2 mb-6">
-                <SafeIcon icon={FiUsers} className="w-6 h-6 text-primary" />
-                <h2 className="text-xl font-semibold text-gray-900">Personas Involucradas</h2>
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center space-x-2">
+                  <SafeIcon icon={FiUsers} className="w-6 h-6 text-primary" />
+                  <h2 className="text-xl font-semibold text-gray-900">Personas Involucradas</h2>
+                </div>
+                
+                {/* Botón para crear nuevo contacto en modo edición */}
+                {isEditing && canChangeInvolvedPeople() && (
+                  <button
+                    onClick={() => handleCreateNewContact(activeTab.includes('agent-') ? 'agent' : activeTab)}
+                    className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors"
+                  >
+                    <SafeIcon icon={FiUserPlus} className="w-4 h-4" />
+                    <span>Nuevo {getRoleLabel(activeTab.includes('agent-') ? 'agent' : activeTab)}</span>
+                  </button>
+                )}
               </div>
 
-              {/* Tabs */}
+              {/* Tabs - Optimizado para mostrar los 5 roles sin scroll horizontal */}
               <div className="border-b border-gray-200 mb-6">
-                <nav className="-mb-px flex space-x-8 overflow-x-auto">
+                <nav className="-mb-px flex flex-wrap space-x-4">
                   {contactTabs.map((tab) => (
                     <button
                       key={tab.key}
                       onClick={() => setActiveTab(tab.key)}
-                      className={`whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm flex items-center space-x-2 ${activeTab === tab.key
-                        ? 'border-primary text-primary'
-                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                        }`}
+                      className={`whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm flex items-center space-x-1 ${
+                        activeTab === tab.key
+                          ? 'border-primary text-primary'
+                          : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                      }`}
                     >
                       {tab.contact.avatar ? (
                         <img
                           src={tab.contact.avatar}
                           alt={tab.contact.name}
-                          className="w-6 h-6 rounded-full object-cover"
+                          className="w-5 h-5 rounded-full object-cover"
                         />
                       ) : (
-                        <SafeIcon icon={tab.icon} className="w-5 h-5" />
+                        <SafeIcon icon={tab.icon} className="w-4 h-4" />
                       )}
                       <span>{tab.label}</span>
                     </button>
@@ -989,113 +1723,158 @@ const ClaimDetails = () => {
 
             {/* Documentos */}
             <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-              <div className="flex items-center space-x-2 mb-6">
-                <SafeIcon icon={FiFileText} className="w-6 h-6 text-primary" />
-                <h2 className="text-xl font-semibold text-gray-900">Documentos</h2>
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center space-x-2">
+                  <SafeIcon icon={FiFileText} className="w-6 h-6 text-primary" />
+                  <h2 className="text-xl font-semibold text-gray-900">Documentos</h2>
+                </div>
               </div>
 
               {Object.keys(documents).length > 0 ? (
                 <div className="space-y-6">
-                  {Object.keys(documents).map((category) => (
-                    <div key={category} className="space-y-3">
-                      <h3 className="text-lg font-medium text-gray-800">{category}</h3>
-                      <div className="space-y-4">
-                        {documents[category].map((doc) => (
-                          <div
-                            key={doc.id}
-                            className={`border rounded-md ${doc.status === 'rechazado'
-                              ? 'border-red-200 bg-red-50'
-                              : doc.status === 'aprobado'
-                                ? 'border-green-200 bg-green-50'
-                                : doc.status === 'pendiente'
+                  {Object.keys(documents).map((category) => {
+                    // Filtrar documentos de identificación que ahora están en personas involucradas
+                    const filteredDocs = documents[category].filter(doc => 
+                      shouldShowDocument(doc.name) && shouldShowDocument(doc.type)
+                    );
+                    
+                    // No mostrar categorías vacías
+                    if (filteredDocs.length === 0) return null;
+                    
+                    return (
+                      <div key={category} className="space-y-3">
+                        <h3 className="text-lg font-medium text-gray-800">{category}</h3>
+                        <div className="space-y-4">
+                          {filteredDocs.map((doc) => (
+                            <div
+                              key={doc.id}
+                              className={`border rounded-md ${
+                                doc.status === 'rechazado'
+                                  ? 'border-red-200 bg-red-50'
+                                  : doc.status === 'aprobado'
+                                  ? 'border-green-200 bg-green-50'
+                                  : doc.status === 'pendiente'
                                   ? 'border-orange-200 bg-orange-50'
                                   : 'border-blue-200 bg-blue-50'
                               }`}
-                          >
-                            <div className="flex items-center justify-between p-3">
-                              <div className="flex items-center space-x-3 flex-1">
-                                {/* Previsualización del documento */}
-                                {renderDocumentPreview(doc)}
+                            >
+                              <div className="flex items-center justify-between p-3">
+                                <div className="flex items-center space-x-3 flex-1">
+                                  {/* Previsualización del documento */}
+                                  {renderDocumentPreview(doc)}
 
-                                <div className="flex-1">
-                                  <div className="flex items-center space-x-2">
-                                    <p className="text-sm font-medium text-gray-900">{doc.name}</p>
-                                    {getDocumentStatusBadge(doc.status)}
+                                  <div className="flex-1">
+                                    <div className="flex items-center space-x-2">
+                                      <p className="text-sm font-medium text-gray-900">{doc.name}</p>
+                                      {getDocumentStatusBadge(doc.status)}
+                                    </div>
+                                    <p className="text-xs text-gray-500">{doc.type}</p>
+                                    
+                                    {/* Botón de carga para este documento específico en modo edición */}
+                                    {isEditing && canUploadDocuments() && (
+                                      <div className="mt-2">
+                                        <div className="relative">
+                                          <input
+                                            type="file"
+                                            accept=".pdf,.png,.jpg,.jpeg"
+                                            onChange={(e) => handleNewDocumentUpload(e, category, doc.type)}
+                                            className="hidden"
+                                            id={`upload-specific-${doc.id}`}
+                                          />
+                                          <label
+                                            htmlFor={`upload-specific-${doc.id}`}
+                                            className="cursor-pointer inline-flex items-center space-x-1 text-xs px-2 py-1 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors"
+                                          >
+                                            <SafeIcon icon={FiUpload} className="w-3 h-3" />
+                                            <span>Subir {doc.type}</span>
+                                          </label>
+                                        </div>
+                                      </div>
+                                    )}
                                   </div>
-                                  <p className="text-xs text-gray-500">{doc.type}</p>
                                 </div>
-                              </div>
 
-                              <div className="flex items-center space-x-2">
-                                {doc.status !== 'pendiente' && (
-                                  <a
-                                    href={doc.url}
-                                    className="text-primary hover:text-primary-dark text-sm"
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                  >
-                                    <SafeIcon icon={FiDownload} className="w-4 h-4" />
-                                  </a>
-                                )}
-
-                                {user?.role === 'admin' && doc.status === 'recibido' && (
-                                  <>
+                                <div className="flex items-center space-x-2">
+                                  {doc.status !== 'pendiente' && (
                                     <button
-                                      onClick={() => handleDocumentAction('approve', doc.id)}
-                                      className="text-green-600 hover:text-green-700 text-sm"
+                                      onClick={() => openDocumentPreview(doc)}
+                                      className="text-primary hover:text-primary-dark text-sm"
                                     >
-                                      <SafeIcon icon={FiCheck} className="w-4 h-4" />
+                                      <SafeIcon icon={FiEye} className="w-4 h-4" />
                                     </button>
+                                  )}
+
+                                  {user?.role === 'admin' && doc.status === 'recibido' && (
+                                    <>
+                                      <button
+                                        onClick={() => handleDocumentAction('approve', doc.id)}
+                                        className="text-green-600 hover:text-green-700 text-sm"
+                                      >
+                                        <SafeIcon icon={FiCheck} className="w-4 h-4" />
+                                      </button>
+                                      <button
+                                        onClick={() => handleDocumentAction('reject', doc.id)}
+                                        className="text-red-600 hover:text-red-700 text-sm"
+                                      >
+                                        <SafeIcon icon={FiX} className="w-4 h-4" />
+                                      </button>
+                                    </>
+                                  )}
+
+                                  {user?.role !== 'admin' && doc.status === 'rechazado' && (
                                     <button
-                                      onClick={() => handleDocumentAction('reject', doc.id)}
+                                      onClick={() => handleReupload(doc.id)}
+                                      className="text-primary hover:text-primary-dark text-sm flex items-center space-x-1"
+                                    >
+                                      <SafeIcon icon={FiUpload} className="w-4 h-4" />
+                                      <span className="text-xs">Subir nuevamente</span>
+                                    </button>
+                                  )}
+                                  
+                                  {/* Botón para eliminar documento en modo edición */}
+                                  {isEditing && canDeleteDocuments() && (
+                                    <button
+                                      onClick={() => handleDeleteDocument(doc.id, category)}
                                       className="text-red-600 hover:text-red-700 text-sm"
                                     >
-                                      <SafeIcon icon={FiX} className="w-4 h-4" />
+                                      <SafeIcon icon={FiTrash2} className="w-4 h-4" />
                                     </button>
-                                  </>
-                                )}
-
-                                {user?.role !== 'admin' && doc.status === 'rechazado' && (
-                                  <button
-                                    onClick={() => handleReupload(doc.id)}
-                                    className="text-primary hover:text-primary-dark text-sm flex items-center space-x-1"
-                                  >
-                                    <SafeIcon icon={FiUpload} className="w-4 h-4" />
-                                    <span className="text-xs">Subir nuevamente</span>
-                                  </button>
-                                )}
-                              </div>
-                            </div>
-
-                            {/* Historial de comentarios */}
-                            {renderCommentHistory(doc.commentHistory)}
-
-                            {reuploadMode === doc.id && (
-                              <div className="p-3 border-t border-gray-200 bg-white rounded-b-md">
-                                <div className="flex flex-col space-y-2">
-                                  <p className="text-sm text-gray-700">Selecciona un nuevo archivo para subir:</p>
-                                  <div className="flex flex-col space-y-2">
-                                    <input
-                                      type="file"
-                                      accept=".pdf,.png,.jpg,.jpeg"
-                                      onChange={(e) => handleFileUpload(e, doc.id)}
-                                      className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-primary file:text-white hover:file:bg-primary-dark"
-                                    />
-                                    <button
-                                      onClick={() => setReuploadMode(null)}
-                                      className="text-sm text-gray-500 hover:text-gray-700"
-                                    >
-                                      Cancelar
-                                    </button>
-                                  </div>
+                                  )}
                                 </div>
                               </div>
-                            )}
-                          </div>
-                        ))}
+
+                              {/* Historial de comentarios */}
+                              {renderCommentHistory(doc.commentHistory)}
+
+                              {reuploadMode === doc.id && (
+                                <div className="p-3 border-t border-gray-200 bg-white rounded-b-md">
+                                  <div className="flex flex-col space-y-2">
+                                    <p className="text-sm text-gray-700">
+                                      Selecciona un nuevo archivo para subir:
+                                    </p>
+                                    <div className="flex flex-col space-y-2">
+                                      <input
+                                        type="file"
+                                        accept=".pdf,.png,.jpg,.jpeg"
+                                        onChange={(e) => handleFileUpload(e, doc.id)}
+                                        className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-primary file:text-white hover:file:bg-primary-dark"
+                                      />
+                                      <button
+                                        onClick={() => setReuploadMode(null)}
+                                        className="text-sm text-gray-500 hover:text-gray-700"
+                                      >
+                                        Cancelar
+                                      </button>
+                                    </div>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               ) : (
                 <div className="text-center py-8">
@@ -1110,14 +1889,16 @@ const ClaimDetails = () => {
           </div>
 
           {/* Panel Lateral */}
-          <div className="space-y-6 lg:sticky lg:top-8 self-start">
+          <div className="space-y-6 lg:sticky lg:top-20 self-start">
             {/* Cambiar Estatus (Solo Admin o Staff) */}
             {isAdminOrStaff && (
               <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
                 <h3 className="text-lg font-semibold text-gray-900 mb-4">Cambiar Estatus</h3>
                 <div className="space-y-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Nuevo estatus</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Nuevo estatus
+                    </label>
                     <select
                       value={newStatus}
                       onChange={(e) => setNewStatus(e.target.value)}
@@ -1128,8 +1909,10 @@ const ClaimDetails = () => {
                       <option value="Verificado">Verificado</option>
                       <option value="Enviado a Aseguradora">Enviado a Aseguradora</option>
                       <option value="Archivado">Archivado</option>
+                      <option value="Recibido">Recibido</option>
                     </select>
                   </div>
+
                   <button
                     onClick={handleStatusChange}
                     disabled={!newStatus}
@@ -1137,6 +1920,7 @@ const ClaimDetails = () => {
                   >
                     Actualizar Estatus
                   </button>
+
                   <div className="flex items-center space-x-2 mt-2 text-xs text-gray-600 bg-blue-50 p-2 rounded-md">
                     <SafeIcon icon={FiBell} className="w-4 h-4 text-blue-500" />
                     <p>Notificaremos a las Personas Involucradas del Cambio de Estatus</p>
@@ -1155,34 +1939,41 @@ const ClaimDetails = () => {
                     <span className="text-sm text-gray-700">Aprobados</span>
                   </div>
                   <span className="bg-green-100 text-green-800 text-xs font-medium px-2.5 py-0.5 rounded-full">
-                    {Object.values(documents).flat().filter(doc => doc.status === 'aprobado').length}
+                    {[...Object.values(documents).flat(), ...Object.values(identificationDocs).flat()]
+                      .filter((doc) => doc.status === 'aprobado').length}
                   </span>
                 </div>
+
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-2">
                     <SafeIcon icon={FiX} className="w-4 h-4 text-red-500" />
                     <span className="text-sm text-gray-700">Rechazados</span>
                   </div>
                   <span className="bg-red-100 text-red-800 text-xs font-medium px-2.5 py-0.5 rounded-full">
-                    {Object.values(documents).flat().filter(doc => doc.status === 'rechazado').length}
+                    {[...Object.values(documents).flat(), ...Object.values(identificationDocs).flat()]
+                      .filter((doc) => doc.status === 'rechazado').length}
                   </span>
                 </div>
+
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-2">
                     <SafeIcon icon={FiClock} className="w-4 h-4 text-blue-500" />
                     <span className="text-sm text-gray-700">Por revisar</span>
                   </div>
                   <span className="bg-blue-100 text-blue-800 text-xs font-medium px-2.5 py-0.5 rounded-full">
-                    {Object.values(documents).flat().filter(doc => doc.status === 'recibido').length}
+                    {[...Object.values(documents).flat(), ...Object.values(identificationDocs).flat()]
+                      .filter((doc) => doc.status === 'recibido').length}
                   </span>
                 </div>
+
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-2">
                     <SafeIcon icon={FiAlertCircle} className="w-4 h-4 text-orange-500" />
                     <span className="text-sm text-gray-700">Pendientes</span>
                   </div>
                   <span className="bg-orange-100 text-orange-800 text-xs font-medium px-2.5 py-0.5 rounded-full">
-                    {Object.values(documents).flat().filter(doc => doc.status === 'pendiente').length}
+                    {[...Object.values(documents).flat(), ...Object.values(identificationDocs).flat()]
+                      .filter((doc) => doc.status === 'pendiente').length}
                   </span>
                 </div>
               </div>
@@ -1212,10 +2003,11 @@ const ClaimDetails = () => {
                       <div className="flex items-center space-x-2 mt-1">
                         <p className="text-xs text-gray-500">{activity.timestamp}</p>
                         <span
-                          className={`text-xs px-1.5 py-0.5 rounded-full ${activity.user === 'admin'
-                            ? 'bg-purple-100 text-purple-800'
-                            : 'bg-blue-100 text-blue-800'
-                            }`}
+                          className={`text-xs px-1.5 py-0.5 rounded-full ${
+                            activity.user === 'admin'
+                              ? 'bg-purple-100 text-purple-800'
+                              : 'bg-blue-100 text-blue-800'
+                          }`}
                         >
                           {activity.userName}
                         </span>
@@ -1278,7 +2070,8 @@ const ClaimDetails = () => {
               </div>
               <div className="mb-6">
                 <p className="text-gray-700 mb-4">
-                  Todos los documentos han sido aprobados. ¿Deseas cambiar el estatus del reclamo a "Verificado"?
+                  Todos los documentos han sido aprobados. ¿Deseas cambiar el estatus del reclamo a
+                  "Verificado"?
                 </p>
                 <div className="bg-green-50 p-4 rounded-md border border-green-200">
                   <p className="text-sm text-green-800">
@@ -1302,6 +2095,38 @@ const ClaimDetails = () => {
               </div>
             </div>
           </div>
+        )}
+        
+        {/* Modal de selección de contacto */}
+        {showContactSelector && (
+          <ContactSelector
+            onSelect={handleSelectContact}
+            onClose={() => setShowContactSelector(false)}
+            role={getRoleLabel(currentContactRole)}
+            userId={user?.id} // Pasamos el ID del usuario actual para filtrar solo sus contactos
+          />
+        )}
+        
+        {/* Modal de formulario de persona */}
+        {showPersonForm && (
+          <PersonForm
+            person={editingContact}
+            onSave={handleSavePerson}
+            onCancel={() => {
+              setShowPersonForm(false);
+              setEditingContact(null);
+            }}
+            title={editingContact ? "Editar Persona" : `Nueva Persona - ${getRoleLabel(currentContactRole)}`}
+            isEditing={!!editingContact}
+          />
+        )}
+
+        {/* Modal de previsualización de documentos */}
+        {showDocumentPreview && previewDocument && (
+          <DocumentPreview
+            document={previewDocument}
+            onClose={() => setShowDocumentPreview(false)}
+          />
         )}
       </div>
     </Layout>
