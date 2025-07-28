@@ -6,7 +6,7 @@ import SafeIcon from '../common/SafeIcon';
 import AvatarUploader from './AvatarUploader';
 import EmailManager from '../components/EmailManager';
 
-const { FiLogOut, FiUser, FiHome, FiUsers, FiEdit, FiX, FiSave, FiUserCheck, FiCheck } = FiIcons;
+const { FiLogOut, FiUser, FiHome, FiUsers, FiEdit, FiX, FiSave, FiUserCheck, FiCheck, FiMessageSquare } = FiIcons;
 
 const Layout = ({ children, title }) => {
   const { user, logout, updateUserProfile } = useAuth();
@@ -54,6 +54,14 @@ const Layout = ({ children, title }) => {
 
   const handleGroupsManagement = () => {
     navigate('/admin/grupos');
+  };
+
+  const handleHelpHubSettings = () => {
+    if (user?.role === 'superadmin') {
+      navigate('/superadmin/helphub');
+    } else if (user?.role === 'admin') {
+      navigate('/admin/helphub');
+    }
   };
 
   const openProfileModal = () => {
@@ -107,7 +115,7 @@ const Layout = ({ children, title }) => {
       errors.emails = "Debe tener al menos un email";
     } else {
       // Validar que al menos un email sea válido
-      const validEmails = profileData.emails.filter(emailObj => 
+      const validEmails = profileData.emails.filter(emailObj =>
         emailObj.email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailObj.email)
       );
       if (validEmails.length === 0) {
@@ -156,6 +164,7 @@ const Layout = ({ children, title }) => {
   const isUsersPage = location.pathname === '/admin/usuarios' || location.pathname === '/admin/usuarios-agente';
   const isAgentsPage = location.pathname === '/admin/agentes';
   const isGroupsPage = location.pathname === '/admin/grupos';
+  const isHelpHubPage = location.pathname.includes('/helphub');
 
   // Función para obtener el badge del rol correcto
   const getRoleBadge = () => {
@@ -255,6 +264,17 @@ const Layout = ({ children, title }) => {
                     </>
                   )}
                 </>
+              )}
+
+              {/* Botón HelpHub Settings - Solo para Admin y SuperAdmin */}
+              {(isAdmin || isSuperAdmin) && !isHelpHubPage && (
+                <button
+                  onClick={handleHelpHubSettings}
+                  className="flex items-center space-x-1 sm:space-x-2 text-gray-600 hover:text-primary transition-colors"
+                >
+                  <SafeIcon icon={FiMessageSquare} className="w-4 sm:w-5 h-4 sm:h-5" />
+                  <span className="hidden sm:inline text-sm">HelpHub</span>
+                </button>
               )}
 
               <button

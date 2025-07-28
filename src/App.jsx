@@ -1,6 +1,6 @@
 import React from 'react';
-import {HashRouter as Router,Routes,Route} from 'react-router-dom';
-import {AuthProvider} from './contexts/AuthContext';
+import { HashRouter as Router, Routes, Route } from 'react-router-dom';
+import { AuthProvider } from './contexts/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import Login from './pages/Login';
 import ClientDashboard from './pages/ClientDashboard';
@@ -11,6 +11,8 @@ import UserManagement from './pages/UserManagement';
 import AgentUserManagement from './pages/AgentUserManagement';
 import AgentManagement from './pages/AgentManagement';
 import ClientGroupManagement from './pages/ClientGroupManagement';
+import HelpHubSettings from './pages/HelpHubSettings';
+
 // SuperAdmin Pages
 import SuperAdminDashboard from './pages/SuperAdminDashboard';
 import TenantManagement from './pages/TenantManagement';
@@ -18,11 +20,12 @@ import CreateEditTenant from './pages/CreateEditTenant';
 import StripeSubscriptions from './pages/StripeSubscriptions';
 import WhiteLabelManagement from './pages/WhiteLabelManagement';
 import IntegrationsManagement from './pages/IntegrationsManagement';
-// Quest Help System
+
+// Quest Help System - Nuevo componente mejorado
 import { QuestProvider } from '@questlabs/react-sdk';
 import '@questlabs/react-sdk/dist/style.css';
 import questConfig from './config/questConfig';
-import AppHelp from './components/HelpHub';
+import HelpHubManager from './components/HelpHubManager';
 
 function App() {
   return (
@@ -36,14 +39,18 @@ function App() {
           <div className="min-h-screen bg-gray-50">
             <Routes>
               <Route path="/login" element={<Login />} />
+              
               {/* Client Routes */}
               <Route path="/dashboard" element={<ProtectedRoute><ClientDashboard /></ProtectedRoute>} />
+              
               {/* Admin Routes */}
               <Route path="/admin" element={<ProtectedRoute adminOrStaff><AdminDashboard /></ProtectedRoute>} />
               <Route path="/admin/usuarios" element={<ProtectedRoute adminOnly><UserManagement /></ProtectedRoute>} />
               <Route path="/admin/usuarios-agente" element={<ProtectedRoute adminOrStaff><AgentUserManagement /></ProtectedRoute>} />
               <Route path="/admin/agentes" element={<ProtectedRoute adminOnly><AgentManagement /></ProtectedRoute>} />
               <Route path="/admin/grupos" element={<ProtectedRoute adminOnly><ClientGroupManagement /></ProtectedRoute>} />
+              <Route path="/admin/helphub" element={<ProtectedRoute adminOnly><HelpHubSettings /></ProtectedRoute>} />
+              
               {/* SuperAdmin Routes */}
               <Route path="/superadmin" element={<ProtectedRoute superAdminOnly><SuperAdminDashboard /></ProtectedRoute>} />
               <Route path="/superadmin/tenants" element={<ProtectedRoute superAdminOnly><TenantManagement /></ProtectedRoute>} />
@@ -52,12 +59,16 @@ function App() {
               <Route path="/superadmin/subscriptions" element={<ProtectedRoute superAdminOnly><StripeSubscriptions /></ProtectedRoute>} />
               <Route path="/superadmin/whitelabel" element={<ProtectedRoute superAdminOnly><WhiteLabelManagement /></ProtectedRoute>} />
               <Route path="/superadmin/integrations" element={<ProtectedRoute superAdminOnly><IntegrationsManagement /></ProtectedRoute>} />
+              <Route path="/superadmin/helphub" element={<ProtectedRoute superAdminOnly><HelpHubSettings /></ProtectedRoute>} />
+              
               {/* Shared Routes */}
               <Route path="/crear-reclamo" element={<ProtectedRoute><CreateClaim /></ProtectedRoute>} />
               <Route path="/reclamo/:id" element={<ProtectedRoute><ClaimDetails /></ProtectedRoute>} />
               <Route path="/" element={<Login />} />
             </Routes>
-            <AppHelp />
+            
+            {/* HelpHub Manager - Componente inteligente que se adapta al contexto */}
+            <HelpHubManager />
           </div>
         </Router>
       </QuestProvider>
