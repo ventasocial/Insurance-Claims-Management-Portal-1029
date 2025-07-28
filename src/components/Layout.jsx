@@ -30,7 +30,10 @@ const Layout = ({ children, title }) => {
   };
 
   const handleHome = () => {
-    if (user?.role === 'admin' || user?.role === 'staff') {
+    // Corregir la navegación según el rol del usuario
+    if (user?.role === 'superadmin') {
+      navigate('/superadmin');
+    } else if (user?.role === 'admin' || user?.role === 'staff') {
       navigate('/admin');
     } else {
       navigate('/dashboard');
@@ -147,11 +150,48 @@ const Layout = ({ children, title }) => {
   // Determinar si el usuario actual es administrador o agente
   const isAdmin = user?.role === 'admin';
   const isStaff = user?.role === 'staff';
+  const isSuperAdmin = user?.role === 'superadmin';
 
   // Verificar páginas actuales
   const isUsersPage = location.pathname === '/admin/usuarios' || location.pathname === '/admin/usuarios-agente';
   const isAgentsPage = location.pathname === '/admin/agentes';
   const isGroupsPage = location.pathname === '/admin/grupos';
+
+  // Función para obtener el badge del rol correcto
+  const getRoleBadge = () => {
+    switch (user?.role) {
+      case 'superadmin':
+        return (
+          <span className="text-xs bg-red-600 text-white px-2 py-1 rounded-full">
+            SuperAdmin
+          </span>
+        );
+      case 'admin':
+        return (
+          <span className="text-xs bg-purple-600 text-white px-2 py-1 rounded-full">
+            Admin
+          </span>
+        );
+      case 'staff':
+        return (
+          <span className="text-xs bg-blue-600 text-white px-2 py-1 rounded-full">
+            Agente
+          </span>
+        );
+      case 'client':
+        return (
+          <span className="text-xs bg-green-600 text-white px-2 py-1 rounded-full">
+            Cliente
+          </span>
+        );
+      default:
+        return (
+          <span className="text-xs bg-gray-600 text-white px-2 py-1 rounded-full">
+            Usuario
+          </span>
+        );
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
@@ -162,52 +202,54 @@ const Layout = ({ children, title }) => {
               <img
                 src="https://storage.googleapis.com/msgsndr/HWRXLf7lstECUAG07eRw/media/685d77c05c72d29e532e823f.png"
                 alt="Logo"
-                className="h-10 w-auto"
+                className="h-8 sm:h-10 w-auto"
               />
-              <h1 className="text-xl font-semibold text-gray-900">{title}</h1>
+              {/* Ocultar el título en pantallas pequeñas (menos de 768px) */}
+              <h1 className="hidden md:block text-lg lg:text-xl font-semibold text-gray-900">{title}</h1>
             </div>
-            <div className="flex items-center space-x-4">
+
+            <div className="flex items-center space-x-2 sm:space-x-4">
               <button
                 onClick={handleHome}
-                className="flex items-center space-x-2 text-gray-600 hover:text-primary transition-colors"
+                className="flex items-center space-x-1 sm:space-x-2 text-gray-600 hover:text-primary transition-colors"
               >
-                <SafeIcon icon={FiHome} className="w-5 h-5" />
-                <span className="hidden sm:inline">Inicio</span>
+                <SafeIcon icon={FiHome} className="w-4 sm:w-5 h-4 sm:h-5" />
+                <span className="hidden sm:inline text-sm">Inicio</span>
               </button>
 
-              {/* Botones de navegación para administradores y agentes */}
-              {(isAdmin || isStaff) && (
+              {/* Botones de navegación para administradores y agentes (no para SuperAdmin) */}
+              {(isAdmin || isStaff) && !isSuperAdmin && (
                 <>
                   {!isUsersPage && (
                     <button
                       onClick={handleUsersManagement}
-                      className="flex items-center space-x-2 text-gray-600 hover:text-primary transition-colors"
+                      className="flex items-center space-x-1 sm:space-x-2 text-gray-600 hover:text-primary transition-colors"
                     >
-                      <SafeIcon icon={FiUsers} className="w-5 h-5" />
-                      <span className="hidden sm:inline">Usuarios</span>
+                      <SafeIcon icon={FiUsers} className="w-4 sm:w-5 h-4 sm:h-5" />
+                      <span className="hidden sm:inline text-sm">Usuarios</span>
                     </button>
                   )}
-                  
+
                   {/* Solo administradores pueden ver agentes y grupos */}
                   {isAdmin && (
                     <>
                       {!isAgentsPage && (
                         <button
                           onClick={handleAgentsManagement}
-                          className="flex items-center space-x-2 text-gray-600 hover:text-primary transition-colors"
+                          className="flex items-center space-x-1 sm:space-x-2 text-gray-600 hover:text-primary transition-colors"
                         >
-                          <SafeIcon icon={FiUserCheck} className="w-5 h-5" />
-                          <span className="hidden sm:inline">Agentes</span>
+                          <SafeIcon icon={FiUserCheck} className="w-4 sm:w-5 h-4 sm:h-5" />
+                          <span className="hidden sm:inline text-sm">Agentes</span>
                         </button>
                       )}
-                      
+
                       {!isGroupsPage && (
                         <button
                           onClick={handleGroupsManagement}
-                          className="flex items-center space-x-2 text-gray-600 hover:text-primary transition-colors"
+                          className="flex items-center space-x-1 sm:space-x-2 text-gray-600 hover:text-primary transition-colors"
                         >
-                          <SafeIcon icon={FiUsers} className="w-5 h-5" />
-                          <span className="hidden sm:inline">Grupos</span>
+                          <SafeIcon icon={FiUsers} className="w-4 sm:w-5 h-4 sm:h-5" />
+                          <span className="hidden sm:inline text-sm">Grupos</span>
                         </button>
                       )}
                     </>
@@ -217,28 +259,26 @@ const Layout = ({ children, title }) => {
 
               <button
                 onClick={openProfileModal}
-                className="flex items-center space-x-2 text-gray-700 hover:text-primary transition-colors"
+                className="flex items-center space-x-1 sm:space-x-2 text-gray-700 hover:text-primary transition-colors"
               >
-                <SafeIcon icon={FiUser} className="w-5 h-5" />
-                <span className="text-sm hidden sm:inline">{user?.name}</span>
-                <span className="text-xs bg-primary text-white px-2 py-1 rounded-full">
-                  {user?.role === 'admin' ? 'Admin' : user?.role === 'staff' ? 'Agente' : 'Cliente'}
-                </span>
+                <SafeIcon icon={FiUser} className="w-4 sm:w-5 h-4 sm:h-5" />
+                <span className="text-sm hidden sm:inline truncate max-w-20 lg:max-w-none">{user?.name}</span>
+                {getRoleBadge()}
               </button>
-              
+
               <button
                 onClick={handleLogout}
-                className="flex items-center space-x-2 text-gray-600 hover:text-red-600 transition-colors"
+                className="flex items-center space-x-1 sm:space-x-2 text-gray-600 hover:text-red-600 transition-colors"
               >
-                <SafeIcon icon={FiLogOut} className="w-5 h-5" />
-                <span className="hidden sm:inline">Salir</span>
+                <SafeIcon icon={FiLogOut} className="w-4 sm:w-5 h-4 sm:h-5" />
+                <span className="hidden sm:inline text-sm">Salir</span>
               </button>
             </div>
           </div>
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-grow">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8 flex-grow w-full">
         {children}
       </main>
 
@@ -250,7 +290,7 @@ const Layout = ({ children, title }) => {
               <p className="text-sm">Powered by agendia.ai</p>
             </div>
             <div>
-              <p className="text-sm">
+              <p className="text-sm text-center sm:text-left">
                 ¿Necesitas ayuda?{' '}
                 <a
                   href="mailto:hola@agendia.ai"
@@ -266,24 +306,24 @@ const Layout = ({ children, title }) => {
 
       {/* Modal de Edición de Perfil */}
       {showProfileModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between mb-6">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white p-4 sm:p-6 rounded-lg shadow-lg w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-4 sm:mb-6">
               <div className="flex items-center space-x-2">
-                <SafeIcon icon={FiEdit} className="w-6 h-6 text-primary" />
-                <h3 className="text-xl font-medium text-gray-900">Editar Perfil</h3>
+                <SafeIcon icon={FiEdit} className="w-5 sm:w-6 h-5 sm:h-6 text-primary" />
+                <h3 className="text-lg sm:text-xl font-medium text-gray-900">Editar Perfil</h3>
               </div>
               <button
                 onClick={() => setShowProfileModal(false)}
                 className="text-gray-400 hover:text-gray-600 transition-colors"
               >
-                <SafeIcon icon={FiX} className="w-6 h-6" />
+                <SafeIcon icon={FiX} className="w-5 sm:w-6 h-5 sm:h-6" />
               </button>
             </div>
-            
-            <div className="space-y-6">
+
+            <div className="space-y-4 sm:space-y-6">
               {/* Avatar Section */}
-              <div className="flex justify-center pb-6 border-b border-gray-200">
+              <div className="flex justify-center pb-4 sm:pb-6 border-b border-gray-200">
                 <AvatarUploader
                   currentAvatar={profileData.avatar}
                   onAvatarChange={handleAvatarChange}
@@ -292,7 +332,7 @@ const Layout = ({ children, title }) => {
               </div>
 
               {/* Campos de Nombre */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Nombre(s) *
@@ -304,7 +344,7 @@ const Layout = ({ children, title }) => {
                     onChange={handleProfileChange}
                     className={`w-full border ${
                       formErrors.firstName ? 'border-red-300' : 'border-gray-300'
-                    } rounded-md px-3 py-2 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary`}
+                    } rounded-md px-3 py-2 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary text-sm`}
                     placeholder="Nombres"
                   />
                   {formErrors.firstName && (
@@ -323,7 +363,7 @@ const Layout = ({ children, title }) => {
                     onChange={handleProfileChange}
                     className={`w-full border ${
                       formErrors.paternalLastName ? 'border-red-300' : 'border-gray-300'
-                    } rounded-md px-3 py-2 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary`}
+                    } rounded-md px-3 py-2 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary text-sm`}
                     placeholder="Apellido Paterno"
                   />
                   {formErrors.paternalLastName && (
@@ -340,7 +380,7 @@ const Layout = ({ children, title }) => {
                     name="maternalLastName"
                     value={profileData.maternalLastName}
                     onChange={handleProfileChange}
-                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary"
+                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary text-sm"
                     placeholder="Apellido Materno"
                   />
                 </div>
@@ -381,7 +421,7 @@ const Layout = ({ children, title }) => {
                   onChange={handleProfileChange}
                   className={`w-full border ${
                     formErrors.whatsapp ? 'border-red-300' : 'border-gray-300'
-                  } rounded-md px-3 py-2 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary`}
+                  } rounded-md px-3 py-2 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary text-sm`}
                   placeholder="+52 55 1234 5678"
                 />
                 {formErrors.whatsapp && (
@@ -390,16 +430,16 @@ const Layout = ({ children, title }) => {
               </div>
             </div>
 
-            <div className="mt-6 flex justify-end space-x-3 pt-6 border-t border-gray-200">
+            <div className="mt-6 flex flex-col sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-3 pt-6 border-t border-gray-200">
               <button
                 onClick={() => setShowProfileModal(false)}
-                className="px-6 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-colors"
+                className="w-full sm:w-auto px-6 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-colors text-sm"
               >
                 Cancelar
               </button>
               <button
                 onClick={handleSaveProfile}
-                className="flex items-center space-x-2 px-6 py-2 bg-primary text-white rounded-md hover:bg-primary-dark transition-colors"
+                className="w-full sm:w-auto flex items-center justify-center space-x-2 px-6 py-2 bg-primary text-white rounded-md hover:bg-primary-dark transition-colors text-sm"
               >
                 <SafeIcon icon={FiSave} className="w-4 h-4" />
                 <span>Guardar Cambios</span>
