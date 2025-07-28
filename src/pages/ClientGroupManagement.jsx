@@ -5,7 +5,7 @@ import { mockClientGroups } from '../data/mockData';
 import * as FiIcons from 'react-icons/fi';
 import SafeIcon from '../common/SafeIcon';
 
-const { FiUsers, FiArrowLeft, FiPlus, FiEdit, FiTrash2, FiX, FiSave, FiFilter, FiMail, FiPhone, FiUser } = FiIcons;
+const { FiUsers, FiArrowLeft, FiPlus, FiEdit, FiTrash2, FiX, FiSave, FiFilter, FiMail, FiPhone, FiUser, FiChevronDown, FiChevronUp } = FiIcons;
 
 const ClientGroupManagement = () => {
   const navigate = useNavigate();
@@ -24,6 +24,26 @@ const ClientGroupManagement = () => {
     status: 'active'
   });
   const [formErrors, setFormErrors] = useState({});
+  
+  // Estados para filtros móviles
+  const [isFiltersExpanded, setIsFiltersExpanded] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+
+  // Detectar si estamos en móvil
+  React.useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+      if (window.innerWidth >= 768) {
+        setIsFiltersExpanded(true);
+      } else {
+        setIsFiltersExpanded(false);
+      }
+    };
+
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   // Filtrar grupos
   const filteredGroups = groups.filter(group => {
@@ -32,9 +52,9 @@ const ClientGroupManagement = () => {
       group.representativeName.toLowerCase().includes(searchTerm.toLowerCase()) ||
       group.representativeEmail.toLowerCase().includes(searchTerm.toLowerCase())
     ) : true;
-    
+
     const matchesStatus = statusFilter ? group.status === statusFilter : true;
-    
+
     return matchesSearch && matchesStatus;
   });
 
@@ -73,27 +93,27 @@ const ClientGroupManagement = () => {
 
   const validateForm = () => {
     const errors = {};
-    
+
     if (!formData.name.trim()) {
       errors.name = "El nombre del grupo es requerido";
     }
-    
+
     if (!formData.representativeName.trim()) {
       errors.representativeName = "El nombre del representante es requerido";
     }
-    
+
     if (!formData.representativeEmail.trim()) {
       errors.representativeEmail = "El email es requerido";
     } else if (!/\S+@\S+\.\S+/.test(formData.representativeEmail)) {
       errors.representativeEmail = "El email no es válido";
     }
-    
+
     if (!formData.representativePhone.trim()) {
       errors.representativePhone = "El teléfono es requerido";
     } else if (!formData.representativePhone.startsWith('+')) {
       errors.representativePhone = "El número debe incluir el código de país (ej. +52)";
     }
-    
+
     setFormErrors(errors);
     return Object.keys(errors).length === 0;
   };
@@ -103,10 +123,8 @@ const ClientGroupManagement = () => {
 
     if (currentGroup) {
       // Actualizar grupo existente
-      const updatedGroups = groups.map(group =>
-        group.id === currentGroup.id
-          ? { ...group, ...formData }
-          : group
+      const updatedGroups = groups.map(group => 
+        group.id === currentGroup.id ? { ...group, ...formData } : group
       );
       setGroups(updatedGroups);
     } else {
@@ -123,13 +141,13 @@ const ClientGroupManagement = () => {
       };
       setGroups([...groups, newGroup]);
     }
-    
+
     setShowModal(false);
   };
 
   const confirmDelete = () => {
     if (!currentGroup) return;
-    
+
     const updatedGroups = groups.filter(group => group.id !== currentGroup.id);
     setGroups(updatedGroups);
     setShowDeleteModal(false);
@@ -159,113 +177,165 @@ const ClientGroupManagement = () => {
     }
   };
 
+  // Verificar si hay filtros activos
+  const hasActiveFilters = () => {
+    return searchTerm || statusFilter;
+  };
+
+  const getActiveFiltersCount = () => {
+    let count = 0;
+    if (searchTerm) count++;
+    if (statusFilter) count++;
+    return count;
+  };
+
   return (
     <Layout title="Gestión de Grupos de Clientes">
-      <div className="space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-4">
-            <button
-              onClick={() => navigate('/admin')}
-              className="flex items-center space-x-2 text-gray-600 hover:text-primary transition-colors"
-            >
-              <SafeIcon icon={FiArrowLeft} className="w-5 h-5" />
-              <span>Volver</span>
-            </button>
-            <div>
-              <h2 className="text-2xl font-bold text-gray-900">Gestión de Grupos de Clientes</h2>
-              <p className="text-gray-600">Administra los grupos de clientes y sus representantes</p>
+      <div className="space-y-4 sm:space-y-6">
+        {/* Header optimizado para móvil */}
+        <div className="flex flex-col space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div className="flex items-center space-x-4">
+              <button
+                onClick={() => navigate('/admin')}
+                className="flex items-center space-x-2 text-gray-600 hover:text-primary transition-colors"
+              >
+                <SafeIcon icon={FiArrowLeft} className="w-4 sm:w-5 h-4 sm:h-5" />
+                <span className="text-sm sm:text-base">Volver</span>
+              </button>
+              <div>
+                <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Gestión de Grupos de Clientes</h2>
+                <p className="text-gray-600 text-sm sm:text-base">Administra los grupos de clientes y sus representantes</p>
+              </div>
             </div>
+            <button
+              onClick={handleAddGroup}
+              className="w-full sm:w-auto flex items-center justify-center space-x-2 bg-primary text-white px-4 py-2 rounded-lg hover:bg-primary-dark transition-colors"
+            >
+              <SafeIcon icon={FiPlus} className="w-4 sm:w-5 h-4 sm:h-5" />
+              <span>Nuevo Grupo</span>
+            </button>
           </div>
-          <button
-            onClick={handleAddGroup}
-            className="flex items-center space-x-2 bg-primary text-white px-4 py-2 rounded-lg hover:bg-primary-dark transition-colors"
-          >
-            <SafeIcon icon={FiPlus} className="w-5 h-5" />
-            <span>Nuevo Grupo</span>
-          </button>
         </div>
 
-        {/* Filters */}
-        <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center space-x-2">
-              <SafeIcon icon={FiFilter} className="w-5 h-5 text-gray-500" />
-              <h3 className="text-lg font-medium text-gray-900">Filtros</h3>
+        {/* Filtros optimizados para móvil */}
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+          <div className="px-4 sm:px-6 py-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <SafeIcon icon={FiFilter} className="w-4 sm:w-5 h-4 sm:h-5 text-gray-500" />
+                <h3 className="text-base sm:text-lg font-medium text-gray-900">Filtros</h3>
+                {/* Indicador de filtros activos en móvil */}
+                {isMobile && !isFiltersExpanded && hasActiveFilters() && (
+                  <div className="flex items-center space-x-2">
+                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-primary text-white">
+                      {getActiveFiltersCount()} activo{getActiveFiltersCount() > 1 ? 's' : ''}
+                    </span>
+                    <span className="text-xs text-primary font-medium animate-pulse">
+                      Toca para ver
+                    </span>
+                  </div>
+                )}
+              </div>
+              <div className="flex items-center space-x-2">
+                {/* Botón de reset */}
+                {hasActiveFilters() && (
+                  <button
+                    onClick={resetFilters}
+                    className="text-xs sm:text-sm text-gray-600 hover:text-primary flex items-center space-x-1"
+                  >
+                    <SafeIcon icon={FiX} className="w-3 sm:w-4 h-3 sm:h-4" />
+                    <span className="hidden sm:inline">Resetear</span>
+                  </button>
+                )}
+                {/* Botón de toggle para móvil */}
+                {isMobile && (
+                  <button
+                    onClick={() => setIsFiltersExpanded(!isFiltersExpanded)}
+                    className="flex items-center space-x-1 text-primary hover:text-primary-dark transition-colors"
+                  >
+                    <SafeIcon 
+                      icon={isFiltersExpanded ? FiChevronUp : FiChevronDown} 
+                      className="w-4 h-4" 
+                    />
+                    <span className="text-sm font-medium">
+                      {isFiltersExpanded ? 'Ocultar' : 'Mostrar'}
+                    </span>
+                  </button>
+                )}
+              </div>
             </div>
-            <button
-              onClick={resetFilters}
-              className="text-sm text-gray-600 hover:text-primary flex items-center space-x-1"
-            >
-              <SafeIcon icon={FiX} className="w-4 h-4" />
-              <span>Resetear filtros</span>
-            </button>
           </div>
-          
-          <div className="flex flex-col md:flex-row gap-4 items-end">
-            {/* Búsqueda */}
-            <div className="flex-1">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Buscar
-              </label>
-              <input
-                type="text"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder="Buscar por nombre de grupo, representante o email..."
-                className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary text-sm"
-              />
-            </div>
 
-            {/* Filtro por Estado */}
-            <div className="w-full md:w-48">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Estado
-              </label>
-              <select
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-                className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary text-sm"
-              >
-                <option value="">Todos los estados</option>
-                <option value="active">Activo</option>
-                <option value="inactive">Inactivo</option>
-              </select>
+          {/* Contenido de filtros */}
+          {(isFiltersExpanded || !isMobile) && (
+            <div className="px-4 sm:px-6 pb-4 border-t border-gray-100">
+              <div className="pt-4 flex flex-col md:flex-row gap-4 items-end">
+                {/* Búsqueda */}
+                <div className="flex-1 w-full">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Buscar
+                  </label>
+                  <input
+                    type="text"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    placeholder="Buscar por nombre de grupo, representante o email..."
+                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary text-sm"
+                  />
+                </div>
+
+                {/* Filtro por Estado */}
+                <div className="w-full md:w-48">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Estado
+                  </label>
+                  <select
+                    value={statusFilter}
+                    onChange={(e) => setStatusFilter(e.target.value)}
+                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary text-sm"
+                  >
+                    <option value="">Todos los estados</option>
+                    <option value="active">Activo</option>
+                    <option value="inactive">Inactivo</option>
+                  </select>
+                </div>
+              </div>
             </div>
-          </div>
+          )}
         </div>
 
         {/* Groups Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
           {filteredGroups.map((group) => (
             <div key={group.id} className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow">
-              <div className="p-6">
-                <div className="flex items-center space-x-4 mb-4">
+              <div className="p-4 sm:p-6">
+                <div className="flex items-center space-x-3 sm:space-x-4 mb-4">
                   <img
                     src={group.avatar}
                     alt={group.name}
-                    className="w-16 h-16 rounded-full object-cover"
+                    className="w-12 sm:w-16 h-12 sm:h-16 rounded-full object-cover"
                   />
-                  <div className="flex-1">
-                    <h3 className="text-lg font-medium text-gray-900">{group.name}</h3>
+                  <div className="flex-1 min-w-0">
+                    <h3 className="text-base sm:text-lg font-medium text-gray-900 truncate">{group.name}</h3>
                     <div className="flex items-center space-x-2 mt-1">
                       {getStatusBadge(group.status)}
                     </div>
                   </div>
                 </div>
 
-                <div className="space-y-3">
+                <div className="space-y-2 sm:space-y-3">
                   <div className="flex items-center space-x-2 text-sm text-gray-600">
-                    <SafeIcon icon={FiUser} className="w-4 h-4" />
-                    <span>{group.representativeName}</span>
+                    <SafeIcon icon={FiUser} className="w-3 sm:w-4 h-3 sm:h-4 flex-shrink-0" />
+                    <span className="truncate">{group.representativeName}</span>
                   </div>
                   <div className="flex items-center space-x-2 text-sm text-gray-600">
-                    <SafeIcon icon={FiMail} className="w-4 h-4" />
-                    <span>{group.representativeEmail}</span>
+                    <SafeIcon icon={FiMail} className="w-3 sm:w-4 h-3 sm:h-4 flex-shrink-0" />
+                    <span className="truncate">{group.representativeEmail}</span>
                   </div>
                   <div className="flex items-center space-x-2 text-sm text-gray-600">
-                    <SafeIcon icon={FiPhone} className="w-4 h-4" />
-                    <span>{group.representativePhone}</span>
+                    <SafeIcon icon={FiPhone} className="w-3 sm:w-4 h-3 sm:h-4 flex-shrink-0" />
+                    <span className="truncate">{group.representativePhone}</span>
                   </div>
                 </div>
 
@@ -274,7 +344,6 @@ const ClientGroupManagement = () => {
                     <span>{group.clientsCount} clientes</span>
                     <span>{group.agentsCount} agentes</span>
                   </div>
-                  
                   <div className="flex justify-end space-x-2">
                     <button
                       onClick={() => handleEditGroup(group)}
@@ -296,13 +365,13 @@ const ClientGroupManagement = () => {
         </div>
 
         {filteredGroups.length === 0 && (
-          <div className="text-center py-12">
+          <div className="text-center py-8 sm:py-12">
             <SafeIcon icon={FiUsers} className="w-12 h-12 text-gray-400 mx-auto mb-4" />
             <h3 className="text-lg font-medium text-gray-900 mb-2">No hay grupos</h3>
-            <p className="text-gray-600 mb-6">No hay grupos que coincidan con los filtros seleccionados</p>
+            <p className="text-gray-600 mb-4 sm:mb-6">No hay grupos que coincidan con los filtros seleccionados</p>
             <button
               onClick={handleAddGroup}
-              className="bg-primary text-white px-6 py-2 rounded-lg hover:bg-primary-dark transition-colors"
+              className="bg-primary text-white px-4 sm:px-6 py-2 rounded-lg hover:bg-primary-dark transition-colors"
             >
               Crear primer grupo
             </button>
@@ -311,8 +380,8 @@ const ClientGroupManagement = () => {
 
         {/* Modal para Agregar/Editar Grupo */}
         {showModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-md mx-4">
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white p-4 sm:p-6 rounded-lg shadow-lg w-full max-w-md mx-4">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-medium text-gray-900">
                   {currentGroup ? 'Editar Grupo' : 'Nuevo Grupo'}
@@ -424,16 +493,16 @@ const ClientGroupManagement = () => {
                 </div>
               </div>
 
-              <div className="mt-6 flex justify-end space-x-3">
+              <div className="mt-6 flex flex-col sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-3">
                 <button
                   onClick={() => setShowModal(false)}
-                  className="px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-colors"
+                  className="w-full sm:w-auto px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-colors"
                 >
                   Cancelar
                 </button>
                 <button
                   onClick={handleSubmit}
-                  className="flex items-center space-x-2 px-4 py-2 bg-primary text-white rounded-md hover:bg-primary-dark transition-colors"
+                  className="w-full sm:w-auto flex items-center justify-center space-x-2 px-4 py-2 bg-primary text-white rounded-md hover:bg-primary-dark transition-colors"
                 >
                   <SafeIcon icon={FiSave} className="w-4 h-4" />
                   <span>{currentGroup ? 'Guardar Cambios' : 'Crear Grupo'}</span>
@@ -445,18 +514,17 @@ const ClientGroupManagement = () => {
 
         {/* Modal de Confirmación de Eliminación */}
         {showDeleteModal && currentGroup && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white p-6 rounded-lg shadow-lg max-w-md w-full mx-4">
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white p-4 sm:p-6 rounded-lg shadow-lg max-w-md w-full mx-4">
               <div className="flex items-center space-x-2 mb-4">
-                <SafeIcon icon={FiTrash2} className="w-6 h-6 text-red-500" />
-                <h3 className="text-lg font-medium text-gray-900">Confirmar Eliminación</h3>
+                <SafeIcon icon={FiTrash2} className="w-5 sm:w-6 h-5 sm:h-6 text-red-500" />
+                <h3 className="text-base sm:text-lg font-medium text-gray-900">Confirmar Eliminación</h3>
               </div>
-              
-              <div className="mb-6">
-                <p className="text-gray-700 mb-4">
+              <div className="mb-4 sm:mb-6">
+                <p className="text-gray-700 mb-4 text-sm sm:text-base">
                   ¿Estás seguro de que deseas eliminar este grupo? Esta acción no se puede deshacer.
                 </p>
-                <div className="bg-gray-50 p-4 rounded-md">
+                <div className="bg-gray-50 p-3 sm:p-4 rounded-md">
                   <p className="text-sm text-gray-600">
                     <span className="font-medium">Grupo:</span> {currentGroup.name}
                   </p>
@@ -468,17 +536,16 @@ const ClientGroupManagement = () => {
                   </p>
                 </div>
               </div>
-
-              <div className="flex justify-end space-x-3">
+              <div className="flex flex-col sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-3">
                 <button
                   onClick={() => setShowDeleteModal(false)}
-                  className="px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-colors"
+                  className="w-full sm:w-auto px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-colors text-sm"
                 >
                   Cancelar
                 </button>
                 <button
                   onClick={confirmDelete}
-                  className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors"
+                  className="w-full sm:w-auto px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors text-sm"
                 >
                   Eliminar Grupo
                 </button>
